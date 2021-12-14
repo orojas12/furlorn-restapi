@@ -1,5 +1,13 @@
 # Neighborhood Lost Pets Feature Requirements
 
+## User Accounts
+
+- **Create/Edit/Delete account:**
+    Users must create an account to create posts but not to view them. Any other functionality regarding posts must require an account (comments, reactions, etc). Account information must be editable. Users should be able to permanently delete their accounts if desired.
+
+- **Secure:**
+    Account information must be protected against any security threats.
+
 ## User Posts
 
 - **Create/Edit a post of their lost pet:**
@@ -9,7 +17,7 @@
     Users should be able to save a post they're viewing so that they can easily keep track of it and view it later.
 
 - **Comments:**
-    Users should be able to leave comments and view them on a post. Users should also be able to reply to other comments (displayed in a nested fashion).
+    Users should be able to leave comments and view them on a post. Users should be able to delete their comments and reply to other comments.
 
 - **Reactions:**
     Users should be able to react to posts with their preferred emotion (like, heart, sad, angry).
@@ -45,9 +53,9 @@
     Private messaging only needs to support one-to-one conversations.
 
 
-## Notifications
+## Push Notifications
 
-- **Users should receive a notification from any of the following:**
+- **Users should receive a push notification from any of the following:**
   - a private message was received
   - a user comments on their post
   - a saved post's status is changed
