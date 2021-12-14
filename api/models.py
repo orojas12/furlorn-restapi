@@ -12,12 +12,13 @@ class Sex(models.IntegerChoices):
     NOT_APPLICABLE = 9
 
 
-class Breed(models.Model):
-    class Animal(models.IntegerChoices):
-        UNKNOWN = 0
-        DOG = 1
-        CAT = 2
+class Animal(models.IntegerChoices):
+    UNKNOWN = 0
+    DOG = 1
+    CAT = 2
 
+
+class Breed(models.Model):
     name = models.CharField(max_length=50)
     animal = models.IntegerField(choices=Animal.choices)
 
@@ -44,6 +45,7 @@ class Pet(models.Model):
         REUNITED = 3
 
     name = models.CharField(max_length=50)
+    animal = models.IntegerField(choices=Animal.choices)
     breed = models.ManyToManyField("Breed", blank=True)
     age = models.PositiveIntegerField(blank=True, null=True)
     sex = models.IntegerField(choices=Sex.choices, blank=True, default=Sex.UNKNOWN)
@@ -54,7 +56,7 @@ class Pet(models.Model):
         choices=Color.choices, blank=True, default=Color.UNKNOWN
     )
     weight = models.PositiveIntegerField(blank=True, null=True)
-    description = models.CharField(max_length=5000, blank=True)
+    information = models.CharField(max_length=5000, blank=True)
     status = models.IntegerField(choices=Status.choices)
     user = models.ForeignKey("User", on_delete=models.CASCADE)
 
