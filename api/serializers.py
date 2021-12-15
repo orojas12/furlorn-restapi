@@ -1,6 +1,7 @@
 from rest_framework import serializers
+from django.contrib.auth.models import User
 
-from api.models import User, Pet, Photo
+from api.models import Pet, Photo
 
 
 class UserSerializer(serializers.ModelSerializer):

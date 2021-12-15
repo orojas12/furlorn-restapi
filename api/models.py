@@ -1,7 +1,7 @@
-from uuid import uuid4
 from django.db import models
 from django.db.models.fields import CharField
 from django.db.models.fields.related import ForeignKey
+from django.contrib.auth.models import User
 
 
 class Sex(models.IntegerChoices):
@@ -58,7 +58,7 @@ class Pet(models.Model):
     weight = models.PositiveIntegerField(blank=True, null=True)
     information = models.CharField(max_length=5000, blank=True)
     status = models.IntegerField(choices=Status.choices)
-    user = models.ForeignKey("User", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
 class Photo(models.Model):
@@ -66,19 +66,19 @@ class Photo(models.Model):
     pet = ForeignKey("Pet", on_delete=models.CASCADE)
 
 
-class User(models.Model):
-    id = models.UUIDField(primary_key=True, blank=True, default=uuid4)
-    name = models.CharField(max_length=50)
-    surname = models.CharField(max_length=50, blank=True)
-    email = models.EmailField()
+# class User(models.Model):
+#     id = models.UUIDField(primary_key=True, blank=True, default=uuid4)
+#     name = models.CharField(max_length=50)
+#     surname = models.CharField(max_length=50, blank=True)
+#     email = models.EmailField()
 
 
 class Like(models.Model):
-    user = models.ForeignKey("User", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     pet = models.ForeignKey("Pet", on_delete=models.CASCADE)
 
 
 class Comment(models.Model):
-    user = models.ForeignKey("User", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     pet = models.ForeignKey("Pet", on_delete=models.CASCADE)
     reply_to = models.ForeignKey("self", on_delete=models.CASCADE, blank=True)

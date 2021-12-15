@@ -1,9 +1,10 @@
 import boto3
 from django.http.response import Http404
+from django.contrib.auth.models import User
 from rest_framework import generics, views
 from rest_framework.response import Response
 
-from api.models import User, Pet, Photo
+from api.models import Pet, Photo
 from api.serializers import PhotoSerializer, UserSerializer, PetSerializer
 
 s3 = boto3.resource("s3")
