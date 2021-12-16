@@ -1,4 +1,8 @@
 **/__pycache__/
 venv
-db.sqlite3
 .vscode
+
+db.sqlite3
+scrape/pages
+
+
