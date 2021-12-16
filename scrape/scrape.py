@@ -1,8 +1,8 @@
 import os
 import time
-from typing import Dict
 import requests
 import json
+from json.decoder import JSONDecodeError
 from bs4 import BeautifulSoup
 
 ROOT_PATH = os.path.realpath(__file__)
@@ -53,23 +53,38 @@ def get_breeds(html):
     return breeds
 
 
+def create_empty_json_file(file):
+    with open(file, "w") as f:
+        data = dict()
+        f.write(json.dumps(data))
+
+
+def save(file, data: dict, key, value):
+    with open(file, "w") as f:
+        try:
+            data[key] += value
+        except KeyError:
+            data[key] = value
+        finally:
+            f.write(json.dumps(data))
+
+
+def save_to_file(file, key, value: list):
+    try:
+        with open(file, "r") as f:
+            data = json.loads(f.read())
+    except (FileNotFoundError, JSONDecodeError):
+        save(file, dict(), key, value)
+    save(file, data, key, value)
+
+
 def scrape(src, dst, name):
     for i, file in enumerate(sorted(os.listdir(src))):
         with open(os.path.join(src, file), "r") as f:
             html = f.read()
         breeds = get_breeds(html)
         print(f"Page {i}", breeds, sep="\n")
-        if i == 0:
-            with open(dst, "w") as f:
-                data = dict()
-                data[name] = breeds
-                f.write(json.dumps(data))
-        else:
-            with open(dst, "r") as f:
-                data = json.loads(f.read())
-            with open(dst, "w") as f:
-                data[name] += breeds
-                f.write(json.dumps(data))
+        save_to_file(dst, name, breeds)
 
 
 def init():
