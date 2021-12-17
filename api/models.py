@@ -56,6 +56,7 @@ class Pet(models.Model):
         choices=Color.choices, blank=True, default=Color.UNKNOWN
     )
     weight = models.PositiveIntegerField(blank=True, null=True)
+    microchip = models.CharField(max_length=15, blank=True, null=True)
     information = models.CharField(max_length=5000, blank=True)
     status = models.IntegerField(choices=Status.choices)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
