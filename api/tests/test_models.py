@@ -1,24 +1,8 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from api.models import Comment, Pet, Animal, Photo, Sex, Breed
-
-
-def mock_pet_fields(user):
-    fields = {
-        "name": "Yuna",
-        "animal": Animal.CAT,
-        "age": 2,
-        "sex": Sex.FEMALE,
-        "eye_color": Pet.Color.YELLOW,
-        "exterior_color": Pet.Color.BROWN,
-        "weight": 8,
-        "microchip": "900123456789000",
-        "information": "last seen on 5th",
-        "status": Pet.Status.LOST,
-        "user": user,
-    }
-    return fields
+from api.models import Comment, Pet, Animal, Photo, Breed
+from api.tests.mock import mock_pet_data
 
 
 # Create your tests here.
@@ -29,7 +13,7 @@ class PetModelTest(TestCase):
         for i in range(3):
             User.objects.create(username=f"oscar{i}")
         for i in range(3):
-            Pet.objects.create(**mock_pet_fields(User.objects.all().first()))
+            Pet.objects.create(**mock_pet_data(User.objects.all().first()))
         # add users (representing likes) to pets
         for pet in Pet.objects.all():
             for user in User.objects.all():
@@ -84,7 +68,7 @@ class PhotoModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         user = User.objects.create(username="oscar")
-        pet = Pet.objects.create(**mock_pet_fields(user))
+        pet = Pet.objects.create(**mock_pet_data(user))
         for _ in range(3):
             Photo.objects.create(
                 url="http://myphotourl.com/123",
@@ -109,7 +93,7 @@ class CommentModelTest(TestCase):
     def setUpTestData(cls):
         for i in range(3):
             User.objects.create(username=f"oscar{i}")
-        pet = Pet.objects.create(**mock_pet_fields(user=User.objects.all().first()))
+        pet = Pet.objects.create(**mock_pet_data(user=User.objects.all().first()))
         for user in User.objects.all():
             comment = Comment.objects.create(user=user, pet=pet, text="comment")
             Comment.objects.create(
