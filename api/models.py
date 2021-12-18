@@ -59,24 +59,14 @@ class Pet(models.Model):
     microchip = models.CharField(max_length=15, blank=True, null=True)
     information = models.CharField(max_length=5000, blank=True)
     status = models.IntegerField(choices=Status.choices)
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    likes = models.ManyToManyField(User, related_name="likes", blank=True)
 
 
 class Photo(models.Model):
     url = CharField(max_length=200)
     pet = ForeignKey("Pet", on_delete=models.CASCADE)
-
-
-# class User(models.Model):
-#     id = models.UUIDField(primary_key=True, blank=True, default=uuid4)
-#     name = models.CharField(max_length=50)
-#     surname = models.CharField(max_length=50, blank=True)
-#     email = models.EmailField()
-
-
-class Like(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    pet = models.ForeignKey("Pet", on_delete=models.CASCADE)
 
 
 class Comment(models.Model):
