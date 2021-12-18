@@ -72,4 +72,7 @@ class Photo(models.Model):
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     pet = models.ForeignKey("Pet", on_delete=models.CASCADE)
-    reply_to = models.ForeignKey("self", on_delete=models.CASCADE, blank=True)
+    reply_to = models.ForeignKey(
+        "self", on_delete=models.CASCADE, blank=True, null=True
+    )
+    text = models.CharField(max_length=2000)

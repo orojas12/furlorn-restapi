@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from api.models import Pet, Animal, Photo, Sex, Breed
+from api.models import Comment, Pet, Animal, Photo, Sex, Breed
 
 
 def mock_pet_fields(user):
@@ -49,6 +49,13 @@ class PetModelTest(TestCase):
         self.assertIsInstance(pet.status, int)
         self.assertIsInstance(pet.user, User)
 
+    def test_many_to_one_relationship(self):
+        pets = Pet.objects.all()
+        user = User.objects.all().first()
+        self.assertEquals(len(pets), user.pet_set.count())
+        for pet in pets:
+            self.assertIn(pet, user.pet_set.all())
+
     def test_many_to_many_relationship(self):
         for user in User.objects.all():
             for pet in user.likes.all():
@@ -62,34 +69,63 @@ class PetModelTest(TestCase):
 class BreedModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.breed = Breed.objects.create(
+        Breed.objects.create(
             name="American Shorthair",
             animal=Animal.CAT,
         )
 
     def test_it_has_correct_fields(self):
-        self.assertIsInstance(self.breed.name, str)
-        self.assertIsInstance(self.breed.animal, int)
+        breed = Breed.objects.all().first()
+        self.assertIsInstance(breed.name, str)
+        self.assertIsInstance(breed.animal, int)
 
 
 class PhotoModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         user = User.objects.create(username="oscar")
-        cls.pet = Pet.objects.create(**mock_pet_fields(user))
-        cls.photos = [
+        pet = Pet.objects.create(**mock_pet_fields(user))
+        for _ in range(3):
             Photo.objects.create(
                 url="http://myphotourl.com/123",
-                pet=cls.pet,
+                pet=pet,
             )
-            for _ in range(3)
-        ]
 
     def test_it_has_correct_fields(self):
-        self.assertIsInstance(self.photos[0].url, str),
-        self.assertIsInstance(self.photos[0].pet, Pet)
+        photo = Photo.objects.all().first()
+        self.assertIsInstance(photo.url, str),
+        self.assertIsInstance(photo.pet, Pet)
 
     def test_many_to_one_relationship(self):
-        self.assertEquals(len(self.photos), Photo.objects.filter(pet=self.pet).count())
-        for photo in self.photos:
-            self.assertIn(photo, Photo.objects.filter(pet=self.pet))
+        photos = Photo.objects.all()
+        pet = Pet.objects.all().first()
+        self.assertEquals(len(photos), pet.photo_set.count())
+        for photo in photos:
+            self.assertIn(photo, pet.photo_set.all())
+
+
+class CommentModelTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        for i in range(3):
+            User.objects.create(username=f"oscar{i}")
+        pet = Pet.objects.create(**mock_pet_fields(user=User.objects.all().first()))
+        for user in User.objects.all():
+            comment = Comment.objects.create(user=user, pet=pet, text="comment")
+            Comment.objects.create(
+                user=user,
+                pet=pet,
+                reply_to=comment,
+                text="reply",
+            )
+
+    def test_it_has_correct_fields(self):
+        comment = Comment.objects.all().first()
+        self.assertIsInstance(comment.user, User)
+        self.assertIsInstance(comment.pet, Pet)
+        self.assertIsInstance(comment.text, str)
+
+    def test_self_reference(self):
+        for comment in Comment.objects.filter(reply_to=None):
+            reply = Comment.objects.filter(reply_to=comment).first()
+            self.assertEquals(comment, reply.reply_to)
