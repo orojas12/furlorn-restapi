@@ -1,7 +1,7 @@
 import boto3
 from django.http.response import Http404
 from django.contrib.auth.models import User
-from rest_framework import generics, views
+from rest_framework import generics, status, views
 from rest_framework.response import Response
 
 from api.models import Pet, Photo
@@ -31,23 +31,16 @@ class PetDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PetSerializer
 
 
-class PetPhotoList(views.APIView):
-    def get_photo_ids(self, pet_id):
-        # get photo ids from db
-        return ["id1", "id2", "id3"]
-
-    def get_photo_urls(self, keys):
-        # get pre-signed object urls from s3 using keys
-        return ["url1", "url2"]
-
+class PetDetailPhotoList(views.APIView):
     def get(self, request, pk):
-        try:
-            ids = self.get_photo_ids
-            urls = self.get_photo_urls(ids)
-        except Photo.DoesNotExist:
-            raise Http404
-        # except aws error
-        return Response(urls)
+        photos = Photo.objects.filter(pet=pk)
+        serializer = PhotoSerializer(photos, many=True)
+        return Response(data=serializer.data)
 
-    def post(self, request):
-        pass
+    def post(self, request, pk):
+        serializer = PhotoSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
