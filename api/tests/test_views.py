@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from api.models import Pet
+from api.models import Pet, Photo
 from api.serializers import PetSerializer
 from api.tests.mock import mock_pet_data, mock_user_data
 
@@ -136,3 +136,32 @@ class PetDetailTest(APITestCase):
         pets = Pet.objects.all()
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(len(pets), 0)
+
+
+class PetDetailPhotoListTest(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.url = reverse("pet-detail-photos", kwargs={"pk": 1})
+        user = User.objects.create(**mock_user_data())
+        pet = Pet.objects.create(**mock_pet_data(user=user))
+        for i in range(3):
+            Photo.objects.create(url=f"http://url{i}.com", pet=pet)
+
+    def test_list(self):
+        response = self.client.get(self.url)
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(data), 3)
+        for i, obj in enumerate(data):
+            self.assertEqual(obj["url"], f"http://url{i}.com")
+
+    def test_create(self):
+        pet = Pet.objects.get()
+        new_photo = {"url": "http://url4.com", "pet": pet.pk}
+        response = self.client.post(self.url, data=new_photo, format="json")
+        photos = Photo.objects.filter(pet=pet)
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(photos), 4)
+        for key, value in new_photo.items():
+            self.assertEqual(data[key], value)
