@@ -8,6 +8,8 @@ urlpatterns = [
     path("pets/", views.PetList.as_view(), name="pet-list"),
     path("pets/<int:pk>/", views.PetDetail.as_view(), name="pet-detail"),
     path(
-        "pets/<int:pk>/photos/", views.PetPhotoList.as_view(), name="pet-detail-photos"
+        "pets/<int:pk>/photos/",
+        views.PetDetailPhotoList.as_view(),
+        name="pet-detail-photos",
     ),
 ]
