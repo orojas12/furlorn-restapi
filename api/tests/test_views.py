@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from api.models import Pet
+from api.serializers import PetSerializer
 from api.tests.mock import mock_pet_data, mock_user_data
 
 
@@ -65,6 +66,12 @@ class UserDetailTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(user.last_name, partial_data["last_name"])
 
+    def test_destroy(self):
+        response = self.client.delete(self.url)
+        users = User.objects.all()
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(users), 0)
+
 
 class PetListTest(APITestCase):
     @classmethod
@@ -78,3 +85,54 @@ class PetListTest(APITestCase):
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(data), 1)
+
+    def test_create(self):
+        user_pk = User.objects.get().pk
+        pet_data = mock_pet_data(user=user_pk)
+        response = self.client.post(self.url, pet_data, format="json")
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        for key in pet_data:
+            if key == "user":
+                continue
+            self.assertEqual(pet_data[key], data[key])
+
+
+class PetDetailTest(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.url = reverse("pet-detail", kwargs={"pk": 1})
+        user = User.objects.create(**mock_user_data())
+        Pet.objects.create(**mock_pet_data(user=user))
+
+    def test_retrieve(self):
+        serializer = PetSerializer(Pet.objects.get())
+        pet_data = serializer.data
+        response = self.client.get(self.url)
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for key in data:
+            self.assertEqual(data[key], pet_data[key])
+
+    def test_update(self):
+        serializer = PetSerializer(Pet.objects.get())
+        data = serializer.data
+        data["name"] = "maya"
+        response = self.client.put(self.url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        updated_data = response.json()
+        for key, value in updated_data.items():
+            self.assertEqual(value, data[key])
+
+    def test_update_partial(self):
+        data = {"name": "Dakota"}
+        response = self.client.patch(self.url, data, format="json")
+        pet_data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(pet_data["name"], data["name"])
+
+    def test_destroy(self):
+        response = self.client.delete(self.url)
+        pets = Pet.objects.all()
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(pets), 0)
