@@ -1,7 +1,16 @@
-from django.db import models
-from django.db.models.fields import CharField
-from django.db.models.fields.related import ForeignKey
+import logging
+from uuid import uuid4
+
+from boto3 import resource
+from botocore.exceptions import ClientError
 from django.contrib.auth.models import User
+from django.db import models
+from django.db.models.fields import CharField, UUIDField
+from django.db.models.fields.related import ForeignKey
+
+bucket_id = "neighborhoodlostpets.com"
+s3 = resource("s3")
+logger = logging.getLogger(__name__)
 
 
 class Sex(models.IntegerChoices):
@@ -65,8 +74,36 @@ class Pet(models.Model):
 
 
 class Photo(models.Model):
+    id = UUIDField(primary_key=True, default=uuid4, editable=False)
     url = CharField(max_length=200)
     pet = ForeignKey("Pet", on_delete=models.CASCADE)
+
+    def __init__(self, *args, **kwargs):
+        self.file_stream = kwargs.pop("file_stream", None)
+        self.content_type = kwargs.pop("content_type", None)
+        super().__init__(*args, **kwargs)
+
+    def put_s3_object(self):
+        s3_obj = s3.Object(bucket_id, str(self.id))
+
+        return s3_obj.put(
+            Body=self.file_stream,
+            ContentType=self.content_type,
+        )
+
+    def save(self, *args, **kwargs):
+        try:
+            response = self.put_s3_object()
+        except ClientError as e:
+            logger.warning(e)  # log this error
+            raise self.SaveError("Failed to save object to s3") from e
+        logger.info(response)  # log
+        super().save(*args, **kwargs)
+
+    class SaveError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(message)
 
 
 class Comment(models.Model):

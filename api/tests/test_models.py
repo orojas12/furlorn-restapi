@@ -1,11 +1,21 @@
-from django.test import TestCase
-from django.contrib.auth.models import User
+import logging
+from uuid import UUID
 
-from api.models import Comment, Pet, Animal, Photo, Breed
+import boto3
+from api.models import Animal, Breed, Comment, Pet, Photo
 from api.tests.mock import mock_pet_data
+from botocore.exceptions import ClientError
+from django.contrib.auth.models import User
+from django.test import TestCase
+from rest_framework import status
+
+from neighborhood_lost_pets.settings import BASE_DIR
+
+S3 = boto3.resource("s3")
+BUCKET_ID = "neighborhoodlostpets.com"
+TEST_DIR = BASE_DIR / "api/tests"
 
 
-# Create your tests here.
 class PetModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -14,7 +24,7 @@ class PetModelTest(TestCase):
             User.objects.create(username=f"oscar{i}")
         for i in range(3):
             Pet.objects.create(**mock_pet_data(User.objects.all().first()))
-        # add users (representing likes) to pets
+        # add likes to pets
         for pet in Pet.objects.all():
             for user in User.objects.all():
                 pet.likes.add(user)
@@ -66,26 +76,43 @@ class BreedModelTest(TestCase):
 
 class PhotoModelTest(TestCase):
     @classmethod
-    def setUpTestData(cls):
-        user = User.objects.create(username="oscar")
-        pet = Pet.objects.create(**mock_pet_data(user))
-        for _ in range(3):
-            Photo.objects.create(
+    def setUpTestData(cls) -> None:
+        cls.user = User.objects.create(username="oscar")
+        cls.pet = Pet.objects.create(**mock_pet_data(cls.user))
+        with open(TEST_DIR / "images/dog.jpg", "rb") as f:
+            cls.photo = Photo.objects.create(
                 url="http://myphotourl.com/123",
-                pet=pet,
+                pet=cls.pet,
+                file_stream=f.read(),
+                content_type="image/jpeg",
             )
 
+    @classmethod
+    def tearDownClass(cls) -> None:
+        s3_obj = S3.Object(BUCKET_ID, str(cls.photo.id))
+        s3_obj.delete()
+
     def test_it_has_correct_fields(self):
-        photo = Photo.objects.all().first()
-        self.assertIsInstance(photo.url, str),
-        self.assertIsInstance(photo.pet, Pet)
+        self.assertIsInstance(self.photo.id, UUID),
+        self.assertIsInstance(self.photo.url, str),
+        self.assertIsInstance(self.photo.pet, Pet)
 
     def test_many_to_one_relationship(self):
-        photos = Photo.objects.all()
-        pet = Pet.objects.all().first()
-        self.assertEquals(len(photos), pet.photo_set.count())
-        for photo in photos:
-            self.assertIn(photo, pet.photo_set.all())
+        self.assertEquals(1, self.pet.photo_set.count())
+        self.assertIn(self.photo, self.pet.photo_set.all())
+
+    def test_puts_s3_object(self):
+        s3_obj = S3.Object(BUCKET_ID, str(self.photo.id))
+        self.assertTrue(self.s3_object_exists(s3_obj))
+
+    def s3_object_exists(self, s3_obj):
+        try:
+            response = s3_obj.get()
+        except ClientError as e:
+            logging.debug(e.__str__())
+            response = e.response
+        finally:
+            return response["ResponseMetadata"]["HTTPStatusCode"] == status.HTTP_200_OK
 
 
 class CommentModelTest(TestCase):
