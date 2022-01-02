@@ -53,6 +53,7 @@ class Pet(models.Model):
         FOUND = 2
         REUNITED = 3
 
+    id = models.UUIDField(primary_key=True, default=uuid4)
     name = models.CharField(max_length=50)
     animal = models.IntegerField(choices=Animal.choices)
     breed = models.ManyToManyField("Breed", blank=True)
@@ -69,7 +70,7 @@ class Pet(models.Model):
     information = models.CharField(max_length=5000, blank=True)
     status = models.IntegerField(choices=Status.choices)
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name="pets", on_delete=models.CASCADE)
     likes = models.ManyToManyField(User, related_name="likes", blank=True)
 
 
