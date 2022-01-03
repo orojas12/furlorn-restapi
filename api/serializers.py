@@ -4,10 +4,19 @@ from django.contrib.auth.models import User
 from api.models import Pet, Photo
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(serializers.ModelSerializer):
+    pets = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+
     class Meta:
         model = User
-        fields = "__all__"
+        fields = ["username", "email", "first_name", "last_name", "pets"]
+
+
+class CreateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["username", "first_name", "last_name", "password", "email"]
+        extra_kwargs = {"password": {"write_only": True}, "email": {"required": True}}
 
 
 class PetSerializer(serializers.ModelSerializer):
