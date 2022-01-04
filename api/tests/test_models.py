@@ -46,9 +46,9 @@ class PetModelTest(TestCase):
     def test_many_to_one_relationship(self):
         pets = Pet.objects.all()
         user = User.objects.all().first()
-        self.assertEquals(len(pets), user.pet_set.count())
+        self.assertEquals(len(pets), user.pets.count())
         for pet in pets:
-            self.assertIn(pet, user.pet_set.all())
+            self.assertIn(pet, user.pets.all())
 
     def test_many_to_many_relationship(self):
         for user in User.objects.all():
