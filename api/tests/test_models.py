@@ -23,7 +23,7 @@ class PetModelTest(TestCase):
         for i in range(3):
             User.objects.create(username=f"oscar{i}")
         for i in range(3):
-            Pet.objects.create(**mock_pet_data(User.objects.all().first()))
+            Pet.objects.create(**mock_pet_data(user=User.objects.all().first()))
         # add likes to pets
         for pet in Pet.objects.all():
             for user in User.objects.all():
@@ -79,7 +79,7 @@ class PhotoModelTest(TestCase):
     @classmethod
     def setUpTestData(cls) -> None:
         cls.user = User.objects.create(username="oscar")
-        cls.pet = Pet.objects.create(**mock_pet_data(cls.user))
+        cls.pet = Pet.objects.create(**mock_pet_data(user=cls.user))
         with open(TEST_DIR / "images/dog.jpg", "rb") as f:
             cls.photo = Photo.objects.create(
                 url="http://myphotourl.com/123",
@@ -99,8 +99,8 @@ class PhotoModelTest(TestCase):
         self.assertIsInstance(self.photo.pet, Pet)
 
     def test_many_to_one_relationship(self):
-        self.assertEquals(1, self.pet.photo_set.count())
-        self.assertIn(self.photo, self.pet.photo_set.all())
+        self.assertEquals(1, self.pet.photos.count())
+        self.assertIn(self.photo, self.pet.photos.all())
 
     def test_puts_s3_object(self):
         s3_obj = S3.Object(BUCKET_ID, str(self.photo.id))

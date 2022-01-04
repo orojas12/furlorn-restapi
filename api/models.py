@@ -75,7 +75,7 @@ class Pet(models.Model):
 class Photo(models.Model):
     id = UUIDField(primary_key=True, default=uuid4, editable=False)
     url = CharField(max_length=200)
-    pet = ForeignKey("Pet", on_delete=models.CASCADE)
+    pet = ForeignKey("Pet", related_name="photos", on_delete=models.CASCADE)
 
     def __init__(self, *args, **kwargs):
         self.file_stream = kwargs.pop("file_stream", None)
