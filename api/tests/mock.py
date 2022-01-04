@@ -10,7 +10,7 @@ def mock_pet_data(user):
         "age": 2,
         "sex": Sex.FEMALE,
         "eye_color": Pet.Color.YELLOW,
-        "exterior_color": Pet.Color.BROWN,
+        "color": Pet.Color.BROWN,
         "weight": 8,
         "microchip": "900123456789000",
         "information": "last seen on 5th",

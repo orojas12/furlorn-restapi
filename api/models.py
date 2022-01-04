@@ -33,19 +33,19 @@ class Breed(models.Model):
 
 
 class Pet(models.Model):
-    class Color(models.IntegerChoices):
-        UNKNOWN = 0
-        WHITE = 1
-        BLACK = 2
-        BROWN = 3
-        ORANGE = 4
-        RED = 5
-        PINK = 6
-        PURPLE = 7
-        BLUE = 8
-        GREEN = 9
-        YELLOW = 10
-        GRAY = 11
+    class Color(models.TextChoices):
+        UNKNOWN = "unknown"
+        WHITE = "white"
+        BLACK = "black"
+        BROWN = "brown"
+        ORANGE = "orange"
+        RED = "red"
+        PINK = "pink"
+        PURPLE = "purple"
+        BLUE = "blue"
+        GREEN = "green"
+        YELLOW = "yellow"
+        GRAY = "gray"
 
     class Status(models.IntegerChoices):
         UNKNOWN = 0
@@ -59,11 +59,11 @@ class Pet(models.Model):
     breed = models.ManyToManyField("Breed", blank=True)
     age = models.PositiveIntegerField(blank=True, null=True)
     sex = models.IntegerField(choices=Sex.choices, blank=True, default=Sex.UNKNOWN)
-    eye_color = models.IntegerField(
-        choices=Color.choices, blank=True, default=Color.UNKNOWN
+    eye_color = models.CharField(
+        max_length=50, choices=Color.choices, blank=True, default=Color.UNKNOWN
     )
-    exterior_color = models.IntegerField(
-        choices=Color.choices, blank=True, default=Color.UNKNOWN
+    color = models.CharField(
+        max_length=50, choices=Color.choices, blank=True, default=Color.UNKNOWN
     )
     weight = models.PositiveIntegerField(blank=True, null=True)
     microchip = models.CharField(max_length=15, blank=True, null=True)

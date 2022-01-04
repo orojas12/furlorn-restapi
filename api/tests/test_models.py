@@ -35,8 +35,8 @@ class PetModelTest(TestCase):
         self.assertIsInstance(pet.animal, int),
         self.assertIsInstance(pet.age, int)
         self.assertIsInstance(pet.sex, int)
-        self.assertIsInstance(pet.eye_color, int)
-        self.assertIsInstance(pet.exterior_color, int)
+        self.assertIsInstance(pet.eye_color, str)
+        self.assertIsInstance(pet.color, str)
         self.assertIsInstance(pet.weight, int)
         self.assertIsInstance(pet.microchip, str)
         self.assertIsInstance(pet.information, str)

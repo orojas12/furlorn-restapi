@@ -94,7 +94,7 @@ class PetSerializerTest(TestCase):
             "age",
             "sex",
             "eye_color",
-            "exterior_color",
+            "color",
             "weight",
             "microchip",
             "information",
