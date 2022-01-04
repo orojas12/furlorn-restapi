@@ -3,21 +3,32 @@ from uuid import uuid4
 from api.models import Animal, Sex, Pet
 
 
-def mock_pet_data(user):
-    fields = {
-        "name": "Yuna",
-        "animal": Animal.CAT,
-        "age": 2,
-        "sex": Sex.FEMALE,
-        "eye_color": Pet.Color.YELLOW,
-        "color": Pet.Color.BROWN,
-        "weight": 8,
-        "microchip": "900123456789000",
-        "information": "last seen on 5th",
-        "status": Pet.Status.LOST,
-        "user": user,
-    }
-    return fields
+def mock_pet_data(exclude: list = None, **kwargs):
+    fields = [
+        {"name": "name", "default": "Yuna"},
+        {"name": "animal", "default": Animal.CAT},
+        {"name": "age", "default": 2},
+        {"name": "sex", "default": Sex.FEMALE},
+        {"name": "eye_color", "default": Pet.Color.YELLOW},
+        {"name": "color", "default": Pet.Color.BROWN},
+        {"name": "weight", "default": 8},
+        {"name": "microchip", "default": "900123456789000"},
+        {"name": "information", "default": "last seen on 5th"},
+        {"name": "status", "default": Pet.Status.LOST},
+        {"name": "user", "default": 1},
+    ]
+
+    data = dict()
+
+    if exclude:
+        for field in fields:
+            if field["name"] in exclude:
+                fields.remove(field)
+
+    for field in fields:
+        data[field["name"]] = kwargs.get(field["name"], field["default"])
+
+    return data
 
 
 def mock_user_data(partial=False, **kwargs):
