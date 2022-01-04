@@ -6,17 +6,17 @@ from rest_framework import generics, status, views
 from rest_framework.response import Response
 
 from api.models import Pet, Photo
-from api.serializers import PhotoSerializer, UserSerializer, PetSerializer
+from api.serializers import PhotoSerializer, UserProfileSerializer, PetSerializer
 
 
 class UserList(generics.ListCreateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = UserProfileSerializer
 
 
 class UserDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = UserProfileSerializer
 
 
 class PetList(generics.ListCreateAPIView):
