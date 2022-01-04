@@ -6,7 +6,7 @@ from rest_framework import generics, status, views
 from rest_framework.response import Response
 
 from api.models import Pet, Photo
-from api.serializers import PhotoSerializer, UserProfileSerializer, PetSerializer
+from api.serializers import UserProfileSerializer, PetSerializer
 
 
 class UserList(generics.ListCreateAPIView):

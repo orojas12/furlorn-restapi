@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 
-from api.models import Pet, Photo
+from api.models import Pet
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -19,13 +19,14 @@ class CreateUserSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}, "email": {"required": True}}
 
 
+class PhotoURLField(serializers.RelatedField):
+    def to_representation(self, value):
+        return value.url
+
+
 class PetSerializer(serializers.ModelSerializer):
+    photos = PhotoURLField(many=True, read_only=True)
+
     class Meta:
         model = Pet
-        fields = "__all__"
-
-
-class PhotoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Photo
         fields = "__all__"
