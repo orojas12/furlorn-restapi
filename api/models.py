@@ -22,9 +22,9 @@ class Sex(models.IntegerChoices):
 
 
 class Animal(models.TextChoices):
-    UNKNOWN = "unknown"
     DOG = "dog"
     CAT = "cat"
+    OTHER = "other"
 
 
 class Breed(models.Model):
@@ -34,7 +34,6 @@ class Breed(models.Model):
 
 class Pet(models.Model):
     class Color(models.TextChoices):
-        UNKNOWN = "unknown"
         WHITE = "white"
         BLACK = "black"
         BROWN = "brown"
@@ -48,26 +47,25 @@ class Pet(models.Model):
         GRAY = "gray"
 
     class Status(models.TextChoices):
-        UNKNOWN = "unknown"
         LOST = "lost"
         FOUND = "found"
         REUNITED = "reunited"
 
-    id = models.UUIDField(primary_key=True, default=uuid4)
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     name = models.CharField(max_length=50)
     animal = models.CharField(max_length=50, choices=Animal.choices)
     breed = models.ManyToManyField("Breed", blank=True)
     age = models.PositiveIntegerField(blank=True, null=True)
     sex = models.IntegerField(choices=Sex.choices, blank=True, default=Sex.UNKNOWN)
     eye_color = models.CharField(
-        max_length=50, choices=Color.choices, blank=True, default=Color.UNKNOWN
+        max_length=50, choices=Color.choices, blank=True, default=""
     )
     color = models.CharField(
-        max_length=50, choices=Color.choices, blank=True, default=Color.UNKNOWN
+        max_length=50, choices=Color.choices, blank=True, default=""
     )
     weight = models.PositiveIntegerField(blank=True, null=True)
-    microchip = models.CharField(max_length=15, blank=True, null=True)
-    information = models.CharField(max_length=5000, blank=True)
+    microchip = models.CharField(max_length=15, blank=True, default="")
+    information = models.CharField(max_length=5000, blank=True, default="")
     status = models.CharField(max_length=50, choices=Status.choices)
 
     user = models.ForeignKey(User, related_name="pets", on_delete=models.CASCADE)
