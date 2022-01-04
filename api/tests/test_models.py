@@ -31,8 +31,9 @@ class PetModelTest(TestCase):
 
     def test_it_has_correct_fields(self):
         pet = Pet.objects.all().first()
+        self.assertIsInstance(pet.id, UUID)
         self.assertIsInstance(pet.name, str)
-        self.assertIsInstance(pet.animal, int),
+        self.assertIsInstance(pet.animal, str),
         self.assertIsInstance(pet.age, int)
         self.assertIsInstance(pet.sex, int)
         self.assertIsInstance(pet.eye_color, str)
@@ -40,7 +41,7 @@ class PetModelTest(TestCase):
         self.assertIsInstance(pet.weight, int)
         self.assertIsInstance(pet.microchip, str)
         self.assertIsInstance(pet.information, str)
-        self.assertIsInstance(pet.status, int)
+        self.assertIsInstance(pet.status, str)
         self.assertIsInstance(pet.user, User)
 
     def test_many_to_one_relationship(self):
@@ -71,7 +72,7 @@ class BreedModelTest(TestCase):
     def test_it_has_correct_fields(self):
         breed = Breed.objects.all().first()
         self.assertIsInstance(breed.name, str)
-        self.assertIsInstance(breed.animal, int)
+        self.assertIsInstance(breed.animal, str)
 
 
 class PhotoModelTest(TestCase):
