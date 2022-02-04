@@ -11,7 +11,7 @@
 ## User Posts
 
 - **Create/Edit a post of their lost pet:**
-    These posts should contain this information about the pet: animal (cat/dog), name of pet, breed, appearance info (color, eyes, etc, last seen location (displayed as distance from current viewer), date (how long ago), contact info, and other relevant information. Posts should also have photos, and a map that displays the approximate location (do not show exact location for privacy). There should be some form of status indicator showing whether the pet is lost or has be reunited with their owner. All of this information should be editable (including delete) by the user that created the post. Contact info can be hidden for privacy if desired.
+    These posts should contain this information about the pet: animal (cat/dog), name of pet, breed, appearance info (color, eyes, etc), last seen location (displayed as distance from current viewer), date (how long ago), contact info, and other relevant information. Posts should also have photos, and a map that displays the approximate location (do not show exact location for privacy). There should be some form of status indicator showing whether the pet is lost or has be reunited with their owner. All of this information should be editable (including delete) by the user that created the post. Contact info can be hidden for privacy if desired.
 
 - **Save post for later viewing:**
     Users should be able to save a post they're viewing so that they can easily keep track of it and view it later.
