@@ -1,45 +1,29 @@
-from django.test import TestCase
+from api.models import Pet, Photo, UserProfile
+from api.serializers import (
+    PetSerializer,
+    PhotoSerializer,
+    UserProfileSerializer,
+    UserSerializer,
+)
+from api.tests.fake_data import fake_image_file, fake_pet_data, fake_user_data
 from django.contrib.auth.models import User
-from api.tests.mock import mock_user_data, mock_pet_data
-from api.models import Pet, Comment, Photo
-from api.serializers import PetSerializer, UserProfileSerializer, CreateUserSerializer
-from api.tests.test_models import BUCKET_ID, S3, TEST_DIR
+from django.test import TestCase
 
 
 class UserProfileSerializerTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create(**mock_user_data(username="testuser1"))
-        cls.pet = Pet.objects.create(**mock_pet_data(user=cls.user))
-        cls.comment = Comment.objects.create(
-            pet=cls.pet, user=cls.user, text="test comment"
-        )
+        cls.user = User.objects.create(**fake_user_data(username="testuser1"))
+        cls.profile = UserProfile.objects.create(user=cls.user)
 
     def test_serializes_required_fields(self):
-        serializer = UserProfileSerializer(self.user)
-        self.assertEqual(len(serializer.data), 5)
-        for i in ["username", "email", "first_name", "last_name", "pets"]:
-            with self.subTest(field_name=i):
-                self.assertIn(i, serializer.data)
+        serializer = UserProfileSerializer(self.profile)
+        for i in ["id", "user", "pets"]:
+            self.assertIn(i, serializer.data)
         self.assertIsInstance(serializer.data["pets"], list)
 
-    def test_deserializes_correct_data(self):
-        data = {
-            "username": "oscar123",
-            "email": "oscar@email.com",
-            "first_name": "oscar",
-            "last_name": "rojas",
-        }
-        serializer = UserProfileSerializer(data=data)
-        self.assertTrue(serializer.is_valid())
 
-    def test_does_not_deserialize_incorrect_data(self):
-        data = {"first_name": "oscar", "last_name": "rojas"}
-        serializer = UserProfileSerializer(data=data)
-        self.assertFalse(serializer.is_valid())
-
-
-class CreateUserSerializerTest(TestCase):
+class UserSerializerTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.valid_data = {
@@ -69,33 +53,20 @@ class CreateUserSerializerTest(TestCase):
         }
 
     def test_deserializes_required_fields(self):
-        self.assertTrue(CreateUserSerializer(data=self.valid_data).is_valid())
-        self.assertFalse(
-            CreateUserSerializer(data=self.data_missing_username).is_valid()
-        )
-        self.assertFalse(
-            CreateUserSerializer(data=self.data_missing_password).is_valid()
-        )
-        self.assertFalse(CreateUserSerializer(data=self.data_missing_email).is_valid())
+        self.assertTrue(UserSerializer(data=self.valid_data).is_valid())
+        self.assertFalse(UserSerializer(data=self.data_missing_username).is_valid())
+        self.assertFalse(UserSerializer(data=self.data_missing_password).is_valid())
+        self.assertFalse(UserSerializer(data=self.data_missing_email).is_valid())
 
 
 class PetSerializerTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create(**mock_user_data(username="testuser2"))
-        cls.pet = Pet.objects.create(**mock_pet_data(user=cls.user))
-        with open(TEST_DIR / "images/dog.jpg", "rb") as f:
-            cls.photo = Photo.objects.create(
-                url="http://myphotourl.com/123",
-                pet=cls.pet,
-                file_stream=f.read(),
-                content_type="image/jpeg",
-            )
-        cls.comment = Comment.objects.create(
-            pet=cls.pet, user=cls.user, text="test comment"
-        )
-        cls.serialized_fields = [
-            "id",
+        user = User.objects.create(**fake_user_data())
+        cls.profile = UserProfile.objects.create(user=user)
+
+    def test_deserializes_all_fields(self):
+        fields = [
             "name",
             "animal",
             "breed",
@@ -107,53 +78,94 @@ class PetSerializerTest(TestCase):
             "microchip",
             "information",
             "status",
+            "last_known_location",
             "user",
-            "likes",
             "photos",
         ]
-        cls.required_fields = [
+        data = fake_pet_data(user=self.profile.id, include_location=True)
+        data["photos"] = [{"order": 0, "file": fake_image_file()}]
+        serializer = PetSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        for field in fields:
+            self.assertIn(field, serializer.validated_data)
+
+    def test_deserializes_required_fields(self):
+        data = fake_pet_data(
+            user=self.profile.id,
+            include_location=True,
+            exclude=[
+                "name",
+                "age",
+                "sex",
+                "eye_color",
+                "color",
+                "weight",
+                "information",
+                "microchip",
+            ],
+        )
+        serializer = PetSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+    def test_serializes_all_fields(self):
+        fields = [
             "name",
-            "animal",
-            "status",
-        ]
-        cls.optional_fields = [
-            "breed",
             "age",
             "sex",
             "eye_color",
             "color",
-            "information",
             "weight",
+            "information",
             "microchip",
+            "animal",
+            "breed",
+            "status",
+            "last_known_location",
+            "user",
+            "photos",
+            "likes",
         ]
-        cls.valid_data = mock_pet_data()
+        pet = Pet.objects.create(**fake_pet_data(user=self.profile))
+        serializer = PetSerializer(pet)
+        for field in fields:
+            self.assertIn(field, serializer.data)
 
-    def test_serializes_correct_fields(self):
-        serializer = PetSerializer(self.pet)
-        for field in self.serialized_fields:
-            with self.subTest(field=field):
-                self.assertIn(field, serializer.data)
+        pet = Pet.objects.create(
+            **fake_pet_data(
+                user=self.profile,
+                exclude=[
+                    "name",
+                    "age",
+                    "sex",
+                    "eye_color",
+                    "color",
+                    "weight",
+                    "information",
+                    "microchip",
+                ],
+            )
+        )
+        serializer = PetSerializer(pet)
+        for field in fields:
+            self.assertIn(field, serializer.data)
 
-    def test_deserializes_required_fields(self):
-        serializer = PetSerializer(data=mock_pet_data(exclude=self.optional_fields))
-        self.assertTrue(serializer.is_valid())
 
-    def test_deserializes_optional_fields(self):
-        serializer = PetSerializer(data=mock_pet_data())
-        self.assertTrue(serializer.is_valid())
-
-    def test_does_not_deserialize_incorrect_data(self):
-        for field in self.required_fields:
-            data = mock_pet_data(exclude=[field])
-            serializer = PetSerializer(data=data)
-            self.assertFalse(serializer.is_valid())
-
-    def test_serializes_related_fields(self):
-        serializer = PetSerializer(self.pet)
-        self.assertEqual(len(serializer.data["photos"]), 1)
-        self.assertIn(self.photo.url, serializer.data["photos"])
-
+class PhotoSerializerTest(TestCase):
     @classmethod
-    def tearDownClass(cls):
-        s3_obj = S3.Object(BUCKET_ID, str(cls.photo.id))
-        s3_obj.delete()
+    def setUpTestData(cls):
+        user = User.objects.create(**fake_user_data())
+        cls.user = UserProfile.objects.create(user=user)
+        cls.pet = Pet.objects.create(**fake_pet_data(user=cls.user))
+        cls.photo = Photo(pet=cls.pet, file=fake_image_file())
+        cls.fields = ["order", "file"]
+
+    def test_serializes_all_fields(self):
+        serializer = PhotoSerializer(self.photo)
+        self.assertEqual(len(serializer.data), len(self.fields))
+        for field in self.fields:
+            self.assertTrue(field in serializer.data)
+
+    def test_deserializes_all_fields(self):
+        serializer = PhotoSerializer(data={"order": 1, "file": fake_image_file()})
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(len(serializer.validated_data), len(self.fields))
