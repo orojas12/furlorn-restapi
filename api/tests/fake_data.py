@@ -1,9 +1,12 @@
+from io import BytesIO
 from uuid import uuid4
+from PIL import Image
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from api.models import Animal, Sex, Pet
 
 
-def mock_pet_data(exclude: list = None, **kwargs):
+def fake_pet_data(user, include_location=False, exclude: list = None, **kwargs):
     fields = [
         {"name": "name", "default": "Yuna"},
         {"name": "animal", "default": Animal.CAT},
@@ -14,16 +17,28 @@ def mock_pet_data(exclude: list = None, **kwargs):
         {"name": "weight", "default": 8},
         {"name": "microchip", "default": "900123456789000"},
         {"name": "information", "default": "last seen on 5th"},
+        {
+            "name": "last_known_location",
+            "default": {"latitude": 31.811348, "longitude": -106.564600},
+        },
         {"name": "status", "default": Pet.Status.LOST},
-        {"name": "user", "default": 1},
+        {"name": "user", "default": user},
     ]
 
     data = dict()
-
+    fields_to_remove = []
     if exclude:
         for field in fields:
             if field["name"] in exclude:
-                fields.remove(field)
+                fields_to_remove.append(field)
+
+    if not include_location:
+        for field in fields:
+            if field["name"] == "last_known_location":
+                fields_to_remove.append(field)
+
+    for field in fields_to_remove:
+        fields.remove(field)
 
     for field in fields:
         data[field["name"]] = kwargs.get(field["name"], field["default"])
@@ -31,9 +46,9 @@ def mock_pet_data(exclude: list = None, **kwargs):
     return data
 
 
-def mock_user_data(partial=False, **kwargs):
+def fake_user_data(partial=False, **kwargs):
     user = {
-        "username": ("oscar" if not kwargs.get("username") else kwargs["username"]),
+        "username": ("user1" if not kwargs.get("username") else kwargs["username"]),
         "first_name": "oscar",
         "last_name": "rojas",
         "email": "oscar@email.com",
@@ -42,3 +57,10 @@ def mock_user_data(partial=False, **kwargs):
     if partial:
         user = {**kwargs}
     return user
+
+
+def fake_image_file():
+    image = BytesIO()
+    Image.new("RGB", (100, 100)).save(image, "JPEG")
+    image.seek(0)
+    return SimpleUploadedFile("test.jpg", image.getvalue(), "image/jpeg")
