@@ -2,15 +2,26 @@ import logging
 from uuid import uuid4
 
 from boto3 import resource
-from botocore.exceptions import ClientError
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models.fields import CharField, UUIDField
-from django.db.models.fields.related import ForeignKey
 
 bucket_id = "neighborhoodlostpets.com"
 s3 = resource("s3")
 logger = logging.getLogger(__name__)
+
+
+class UserProfile(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, editable=False)
+
+
+class UserAddress(models.Model):
+    user = models.ForeignKey("UserProfile", on_delete=models.CASCADE)
+    street = models.CharField(max_length=200)
+    city = models.CharField(max_length=200)
+    state = models.CharField(max_length=2)
+    zip = models.CharField(max_length=5)
+    country = models.CharField(max_length=3, default="USA")
 
 
 class Sex(models.IntegerChoices):
@@ -22,9 +33,9 @@ class Sex(models.IntegerChoices):
 
 
 class Animal(models.TextChoices):
-    DOG = "dog"
-    CAT = "cat"
-    OTHER = "other"
+    DOG = "Dog"
+    CAT = "Cat"
+    OTHER = "Other"
 
 
 class Breed(models.Model):
@@ -52,9 +63,9 @@ class Pet(models.Model):
         REUNITED = "reunited"
 
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, blank=True, default="")
     animal = models.CharField(max_length=50, choices=Animal.choices)
-    breed = models.ManyToManyField("Breed", blank=True)
+    breed = models.ManyToManyField("Breed")
     age = models.PositiveIntegerField(blank=True, null=True)
     sex = models.IntegerField(choices=Sex.choices, blank=True, default=Sex.UNKNOWN)
     eye_color = models.CharField(
@@ -68,45 +79,29 @@ class Pet(models.Model):
     information = models.CharField(max_length=5000, blank=True, default="")
     status = models.CharField(max_length=50, choices=Status.choices)
 
-    user = models.ForeignKey(User, related_name="pets", on_delete=models.CASCADE)
-    likes = models.ManyToManyField(User, related_name="likes", blank=True)
+    user = models.ForeignKey(
+        "UserProfile", related_name="pets", on_delete=models.CASCADE
+    )
+    likes = models.ManyToManyField("UserProfile", related_name="likes", blank=True)
+
+
+class PetLastKnownLocation(models.Model):
+    latitude = models.DecimalField(max_digits=8, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    pet = models.OneToOneField(
+        "Pet", related_name="last_known_location", on_delete=models.CASCADE
+    )
 
 
 class Photo(models.Model):
-    id = UUIDField(primary_key=True, default=uuid4, editable=False)
-    url = CharField(max_length=200)
-    pet = ForeignKey("Pet", related_name="photos", on_delete=models.CASCADE)
-
-    def __init__(self, *args, **kwargs):
-        self.file_stream = kwargs.pop("file_stream", None)
-        self.content_type = kwargs.pop("content_type", None)
-        super().__init__(*args, **kwargs)
-
-    def put_s3_object(self):
-        s3_obj = s3.Object(bucket_id, str(self.id))
-
-        return s3_obj.put(
-            Body=self.file_stream,
-            ContentType=self.content_type,
-        )
-
-    def save(self, *args, **kwargs):
-        try:
-            response = self.put_s3_object()
-        except ClientError as e:
-            logger.warning(e)  # log this error
-            raise self.SaveError("Failed to save object to s3") from e
-        logger.info(response)  # log
-        super().save(*args, **kwargs)
-
-    class SaveError(Exception):
-        def __init__(self, message):
-            self.message = message
-            super().__init__(message)
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    order = models.IntegerField(default=0)
+    pet = models.ForeignKey("Pet", related_name="photos", on_delete=models.CASCADE)
+    file = models.ImageField()
 
 
 class Comment(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey("UserProfile", on_delete=models.CASCADE)
     pet = models.ForeignKey("Pet", on_delete=models.CASCADE)
     reply_to = models.ForeignKey(
         "self", on_delete=models.CASCADE, blank=True, null=True

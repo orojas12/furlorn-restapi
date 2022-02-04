@@ -1,14 +1,20 @@
-import logging
 from uuid import UUID
 
 import boto3
-from api.models import Animal, Breed, Comment, Pet, Photo
-from api.tests.mock import mock_pet_data
-from botocore.exceptions import ClientError
+from api.models import (
+    Animal,
+    Breed,
+    Comment,
+    Pet,
+    PetLastKnownLocation,
+    Photo,
+    UserAddress,
+    UserProfile,
+)
+from api.tests.fake_data import fake_pet_data, fake_image_file, fake_user_data
 from django.contrib.auth.models import User
+from django.core.files.base import File
 from django.test import TestCase
-from rest_framework import status
-
 from neighborhood_lost_pets.settings import BASE_DIR
 
 S3 = boto3.resource("s3")
@@ -19,18 +25,22 @@ TEST_DIR = BASE_DIR / "api/tests"
 class PetModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        # create 3 users and 3 pets (pet.user does not matter here)
-        for i in range(3):
-            User.objects.create(username=f"oscar{i}")
-        for i in range(3):
-            Pet.objects.create(**mock_pet_data(user=User.objects.all().first()))
         # add likes to pets
-        for pet in Pet.objects.all():
-            for user in User.objects.all():
-                pet.likes.add(user)
+        profile1 = UserProfile.objects.create(
+            user=User.objects.create(**fake_user_data(username="user1"))
+        )
+        profile2 = UserProfile.objects.create(
+            user=User.objects.create(**fake_user_data(username="user2"))
+        )
+        cls.pet1 = Pet.objects.create(**fake_pet_data(user=profile1))
+        cls.pet2 = Pet.objects.create(**fake_pet_data(user=profile1))
+        cls.pet1.likes.add(profile1)
+        cls.pet1.likes.add(profile2)
+        cls.pet2.likes.add(profile1)
+        cls.pet2.likes.add(profile2)
 
     def test_it_has_correct_fields(self):
-        pet = Pet.objects.all().first()
+        pet = self.pet1
         self.assertIsInstance(pet.id, UUID)
         self.assertIsInstance(pet.name, str)
         self.assertIsInstance(pet.animal, str),
@@ -42,23 +52,62 @@ class PetModelTest(TestCase):
         self.assertIsInstance(pet.microchip, str)
         self.assertIsInstance(pet.information, str)
         self.assertIsInstance(pet.status, str)
-        self.assertIsInstance(pet.user, User)
-
-    def test_many_to_one_relationship(self):
-        pets = Pet.objects.all()
-        user = User.objects.all().first()
-        self.assertEquals(len(pets), user.pets.count())
-        for pet in pets:
-            self.assertIn(pet, user.pets.all())
+        self.assertIsInstance(pet.user, UserProfile)
 
     def test_many_to_many_relationship(self):
-        for user in User.objects.all():
-            for pet in user.likes.all():
-                self.assertIn(user, pet.likes.all())
+        self.assertEqual(self.pet1.likes.count(), 2)
+        self.assertEqual(self.pet2.likes.count(), 2)
 
-        for pet in Pet.objects.all():
-            for user in pet.likes.all():
-                self.assertIn(pet, user.likes.all())
+
+class PetLastKnownLocationModelTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        user = User.objects.create(**fake_user_data())
+        user_profile = UserProfile.objects.create(user=user)
+        pet = Pet.objects.create(**fake_pet_data(user=user_profile))
+        cls.location = PetLastKnownLocation.objects.create(
+            pet=pet, latitude=31.811348, longitude=-106.564600
+        )
+
+    def test_it_has_correct_fields(self):
+        location = self.location
+        self.assertIsInstance(location.latitude, float)
+        self.assertIsInstance(location.longitude, float)
+        self.assertIsInstance(location.pet, Pet)
+
+
+class UserProfileModelTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        user = User.objects.create(**fake_user_data())
+        cls.profile = UserProfile.objects.create(user=user)
+
+    def test_it_has_correct_fields(self):
+        self.assertIsInstance(self.profile.id, UUID)
+        self.assertIsInstance(self.profile.user, User)
+
+
+class UserAddressModelTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        address_data = {
+            "street": "123 Test St",
+            "city": "El Paso",
+            "state": "TX",
+            "zip": "79901",
+            "country": "USA",
+        }
+        user = User.objects.create(**fake_user_data())
+        profile = UserProfile.objects.create(user=user)
+        cls.address = UserAddress.objects.create(user=profile, **address_data)
+
+    def test_it_has_correct_fields(self):
+        self.assertIsInstance(self.address.user, UserProfile)
+        self.assertIsInstance(self.address.street, str)
+        self.assertIsInstance(self.address.city, str)
+        self.assertIsInstance(self.address.state, str)
+        self.assertIsInstance(self.address.zip, str)
+        self.assertIsInstance(self.address.country, str)
 
 
 class BreedModelTest(TestCase):
@@ -77,55 +126,37 @@ class BreedModelTest(TestCase):
 
 class PhotoModelTest(TestCase):
     @classmethod
-    def setUpTestData(cls) -> None:
-        cls.user = User.objects.create(username="oscar")
-        cls.pet = Pet.objects.create(**mock_pet_data(user=cls.user))
-        with open(TEST_DIR / "images/dog.jpg", "rb") as f:
-            cls.photo = Photo.objects.create(
-                url="http://myphotourl.com/123",
-                pet=cls.pet,
-                file_stream=f.read(),
-                content_type="image/jpeg",
-            )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        s3_obj = S3.Object(BUCKET_ID, str(cls.photo.id))
-        s3_obj.delete()
+    def setUpTestData(cls):
+        user = User.objects.create(username="user1")
+        cls.user_profile = UserProfile.objects.create(user=user)
+        cls.pet = Pet.objects.create(**fake_pet_data(user=cls.user_profile))
+        cls.photo = Photo(
+            pet=cls.pet,
+            order=0,
+            file=fake_image_file(),
+        )
 
     def test_it_has_correct_fields(self):
-        self.assertIsInstance(self.photo.id, UUID),
-        self.assertIsInstance(self.photo.url, str),
+        self.assertIsInstance(self.photo.id, UUID)
+        self.assertIsInstance(self.photo.order, int)
+        self.assertIsInstance(self.photo.file, File)
         self.assertIsInstance(self.photo.pet, Pet)
-
-    def test_many_to_one_relationship(self):
-        self.assertEquals(1, self.pet.photos.count())
-        self.assertIn(self.photo, self.pet.photos.all())
-
-    def test_puts_s3_object(self):
-        s3_obj = S3.Object(BUCKET_ID, str(self.photo.id))
-        self.assertTrue(self.s3_object_exists(s3_obj))
-
-    def s3_object_exists(self, s3_obj):
-        try:
-            response = s3_obj.get()
-        except ClientError as e:
-            logging.debug(e.__str__())
-            response = e.response
-        finally:
-            return response["ResponseMetadata"]["HTTPStatusCode"] == status.HTTP_200_OK
 
 
 class CommentModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
+        cls.users = []
         for i in range(3):
-            User.objects.create(username=f"oscar{i}")
-        pet = Pet.objects.create(**mock_pet_data(user=User.objects.all().first()))
-        for user in User.objects.all():
-            comment = Comment.objects.create(user=user, pet=pet, text="comment")
+            user = User.objects.create(username=f"user{i}")
+            cls.users.append(UserProfile.objects.create(user=user))
+
+        pet = Pet.objects.create(**fake_pet_data(user=cls.users[0]))
+
+        for user_profile in cls.users:
+            comment = Comment.objects.create(user=user_profile, pet=pet, text="comment")
             Comment.objects.create(
-                user=user,
+                user=user_profile,
                 pet=pet,
                 reply_to=comment,
                 text="reply",
@@ -133,7 +164,7 @@ class CommentModelTest(TestCase):
 
     def test_it_has_correct_fields(self):
         comment = Comment.objects.all().first()
-        self.assertIsInstance(comment.user, User)
+        self.assertIsInstance(comment.user, UserProfile)
         self.assertIsInstance(comment.pet, Pet)
         self.assertIsInstance(comment.text, str)
 
