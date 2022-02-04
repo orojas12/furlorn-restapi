@@ -21,17 +21,18 @@ client = aws.client("s3", config=Config(signature_version="s3v4"))
 
 @deconstructible
 class S3Storage(Storage):
-    def _open(self):
-        ...
-
     def _save(self, name, content):
         content_type, encoding = mimetypes.guess_type(name)
         try:
-            bucket.put_object(Body=content.read(), ContentType=content_type, Key=name)
+            bucket.put_object(
+                Body=content.read(),
+                ContentType=content_type,
+                Key=name,
+            )
             content.close()
+            return name
         except ClientError as e:
             raise e
-        return name
 
     def delete(self, name):
         try:
@@ -43,17 +44,13 @@ class S3Storage(Storage):
         try:
             # verify if object with name exists in bucket
             response = bucket.Object(name).load()
+            return response["ResponseMetadata"]["HTTPStatusCode"] == 200
         except ClientError as e:
             if e.response["ResponseMetadata"]["HTTPStatusCode"] == 404:
                 return False
             else:
                 # Something else went wrong.
                 raise e
-        else:
-            return response["ResponseMetadata"]["HTTPStatusCode"] == 200
-
-    def size(self, name):
-        ...
 
     def url(self, name):
         try:
