@@ -5,14 +5,14 @@ from rest_framework.test import APITestCase
 
 from api.models import Pet
 from api.serializers import PetSerializer
-from api.tests.mock import mock_pet_data, mock_user_data
+from api.tests.fake_data import fake_pet_data, fake_user_data
 
 
 class UserListTest(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.url = reverse("user-list")
-        User.objects.create(**mock_user_data())
+        User.objects.create(**fake_user_data())
 
     def test_list(self):
         response = self.client.get(self.url)
@@ -21,7 +21,7 @@ class UserListTest(APITestCase):
         self.assertEqual(len(data), 1)
 
     def test_create(self):
-        data = mock_user_data(username="daniel")
+        data = fake_user_data(username="daniel")
         response = self.client.post(self.url, data, format="json")
         user = User.objects.get(username="daniel")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -36,7 +36,7 @@ class UserDetailTest(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.url = reverse("user-detail", kwargs={"pk": 1})
-        User.objects.create(**mock_user_data())
+        User.objects.create(**fake_user_data())
 
     def test_retrieve(self):
         response = self.client.get(self.url)
@@ -49,7 +49,7 @@ class UserDetailTest(APITestCase):
         self.assertEqual(data["email"], user.email)
 
     def test_update(self):
-        data = mock_user_data()
+        data = fake_user_data()
         data["first_name"] = "daniel"
         response = self.client.put(self.url, data, format="json")
         user = User.objects.get()
@@ -60,7 +60,7 @@ class UserDetailTest(APITestCase):
         self.assertEqual(user.email, data["email"])
 
     def test_update_partial(self):
-        partial_data = mock_user_data(partial=True, last_name="padilla")
+        partial_data = fake_user_data(partial=True, last_name="padilla")
         response = self.client.patch(self.url, partial_data, format="json")
         user = User.objects.get()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -77,8 +77,8 @@ class PetListTest(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.url = reverse("pet-list")
-        user = User.objects.create(**mock_user_data())
-        Pet.objects.create(**mock_pet_data(user=user))
+        user = User.objects.create(**fake_user_data())
+        Pet.objects.create(**fake_pet_data(user=user))
 
     def test_list(self):
         response = self.client.get(self.url)
@@ -88,7 +88,7 @@ class PetListTest(APITestCase):
 
     def test_create(self):
         user_pk = User.objects.get().pk
-        pet_data = mock_pet_data(user=user_pk)
+        pet_data = fake_pet_data(user=user_pk)
         response = self.client.post(self.url, pet_data, format="json")
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -102,8 +102,8 @@ class PetDetailTest(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.url = reverse("pet-detail", kwargs={"pk": 1})
-        user = User.objects.create(**mock_user_data())
-        Pet.objects.create(**mock_pet_data(user=user))
+        user = User.objects.create(**fake_user_data())
+        Pet.objects.create(**fake_pet_data(user=user))
 
     def test_retrieve(self):
         serializer = PetSerializer(Pet.objects.get())
