@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -69,6 +70,15 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "neighborhood_lost_pets.wsgi.application"
+
+DEFAULT_FILE_STORAGE = "api.storage.S3Storage"
+
+S3_STORAGE = {
+    "BUCKET_NAME": os.environ.get("BUCKET_NAME"),
+    "AWS_ACCESS_KEY": os.environ.get("AWS_ACCESS_KEY", None),
+    "AWS_SECRET_ACCESS_KEY": os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    "AWS_REGION": os.environ.get("AWS_REGION"),
+}
 
 
 # Database
