@@ -2,12 +2,18 @@ import logging
 from uuid import uuid4
 
 from boto3 import resource
-from django.contrib.auth.models import User
+
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 bucket_id = "neighborhoodlostpets.com"
 s3 = resource("s3")
 logger = logging.getLogger(__name__)
+
+
+class User(AbstractUser):
+    # id = models.UUIDField(primary_key=True, default=uuid4)
+    pass
 
 
 class UserProfile(models.Model):
@@ -16,7 +22,7 @@ class UserProfile(models.Model):
 
 
 class UserAddress(models.Model):
-    user = models.ForeignKey("UserProfile", on_delete=models.CASCADE)
+    user = models.ForeignKey("User", on_delete=models.CASCADE)
     street = models.CharField(max_length=200)
     city = models.CharField(max_length=200)
     state = models.CharField(max_length=2)
@@ -79,10 +85,8 @@ class Pet(models.Model):
     information = models.CharField(max_length=5000, blank=True, default="")
     status = models.CharField(max_length=50, choices=Status.choices)
 
-    user = models.ForeignKey(
-        "UserProfile", related_name="pets", on_delete=models.CASCADE
-    )
-    likes = models.ManyToManyField("UserProfile", related_name="likes", blank=True)
+    user = models.ForeignKey("User", related_name="pets", on_delete=models.CASCADE)
+    likes = models.ManyToManyField("User", related_name="likes", blank=True)
 
 
 class PetLastKnownLocation(models.Model):
@@ -101,7 +105,7 @@ class Photo(models.Model):
 
 
 class Comment(models.Model):
-    user = models.ForeignKey("UserProfile", on_delete=models.CASCADE)
+    user = models.ForeignKey("User", on_delete=models.CASCADE)
     pet = models.ForeignKey("Pet", on_delete=models.CASCADE)
     reply_to = models.ForeignKey(
         "self", on_delete=models.CASCADE, blank=True, null=True
