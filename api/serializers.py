@@ -1,18 +1,17 @@
-from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from api.models import Pet, PetLastKnownLocation, Photo, UserProfile
-
-
-class PhotoSerializer(serializers.Serializer):
-    order = serializers.IntegerField()
-    file = serializers.ImageField()
+from api.models import Pet, PetLastKnownLocation, Photo, User
 
 
 class UserLikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username"]
+
+
+class PhotoSerializer(serializers.Serializer):
+    order = serializers.IntegerField()
+    file = serializers.ImageField()
 
 
 class PetLastKnownLocationSerializer(serializers.ModelSerializer):
@@ -50,24 +49,12 @@ class PetSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    pets = PetSerializer(many=True, read_only=True)
+
     class Meta:
         model = User
-        fields = ["username", "first_name", "last_name", "password", "email"]
+        fields = ["username", "first_name", "last_name", "password", "email", "pets"]
         extra_kwargs = {
             "password": {"write_only": True},
             "email": {"required": True, "write_only": True},
         }
-
-    def create(self, validated_data):
-        user = User.objects.create(**validated_data)
-        profile = UserProfile.objects.create(user=user)
-        return profile
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-    pets = PetSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = UserProfile
-        fields = "__all__"

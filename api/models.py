@@ -12,17 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 class User(AbstractUser):
-    # id = models.UUIDField(primary_key=True, default=uuid4)
-    pass
-
-
-class UserProfile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, editable=False)
+    email = models.EmailField("email address", blank=False)
 
 
 class UserAddress(models.Model):
-    user = models.ForeignKey("User", on_delete=models.CASCADE)
+    user = models.ForeignKey("User", related_name="address", on_delete=models.CASCADE)
     street = models.CharField(max_length=200)
     city = models.CharField(max_length=200)
     state = models.CharField(max_length=2)

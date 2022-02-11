@@ -9,10 +9,9 @@ from api.models import (
     PetLastKnownLocation,
     Photo,
     UserAddress,
-    UserProfile,
+    User,
 )
 from api.tests.fake_data import fake_pet_data, fake_image_file, fake_user_data
-from django.contrib.auth.models import User
 from django.core.files.base import File
 from django.test import TestCase
 from neighborhood_lost_pets.settings import BASE_DIR
@@ -26,18 +25,14 @@ class PetModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         # add likes to pets
-        profile1 = UserProfile.objects.create(
-            user=User.objects.create(**fake_user_data(username="user1"))
-        )
-        profile2 = UserProfile.objects.create(
-            user=User.objects.create(**fake_user_data(username="user2"))
-        )
-        cls.pet1 = Pet.objects.create(**fake_pet_data(user=profile1))
-        cls.pet2 = Pet.objects.create(**fake_pet_data(user=profile1))
-        cls.pet1.likes.add(profile1)
-        cls.pet1.likes.add(profile2)
-        cls.pet2.likes.add(profile1)
-        cls.pet2.likes.add(profile2)
+        user1 = User.objects.create(**fake_user_data(username="user1"))
+        user2 = User.objects.create(**fake_user_data(username="user2"))
+        cls.pet1 = Pet.objects.create(**fake_pet_data(user=user1))
+        cls.pet2 = Pet.objects.create(**fake_pet_data(user=user1))
+        cls.pet1.likes.add(user1)
+        cls.pet1.likes.add(user2)
+        cls.pet2.likes.add(user1)
+        cls.pet2.likes.add(user2)
 
     def test_it_has_correct_fields(self):
         pet = self.pet1
@@ -52,7 +47,7 @@ class PetModelTest(TestCase):
         self.assertIsInstance(pet.microchip, str)
         self.assertIsInstance(pet.information, str)
         self.assertIsInstance(pet.status, str)
-        self.assertIsInstance(pet.user, UserProfile)
+        self.assertIsInstance(pet.user, User)
 
     def test_many_to_many_relationship(self):
         self.assertEqual(self.pet1.likes.count(), 2)
@@ -63,8 +58,7 @@ class PetLastKnownLocationModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         user = User.objects.create(**fake_user_data())
-        user_profile = UserProfile.objects.create(user=user)
-        pet = Pet.objects.create(**fake_pet_data(user=user_profile))
+        pet = Pet.objects.create(**fake_pet_data(user=user))
         cls.location = PetLastKnownLocation.objects.create(
             pet=pet, latitude=31.811348, longitude=-106.564600
         )
@@ -76,15 +70,17 @@ class PetLastKnownLocationModelTest(TestCase):
         self.assertIsInstance(location.pet, Pet)
 
 
-class UserProfileModelTest(TestCase):
+class UserModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        user = User.objects.create(**fake_user_data())
-        cls.profile = UserProfile.objects.create(user=user)
+        cls.user = User.objects.create(**fake_user_data())
 
     def test_it_has_correct_fields(self):
-        self.assertIsInstance(self.profile.id, UUID)
-        self.assertIsInstance(self.profile.user, User)
+        self.assertIsInstance(self.user.id, UUID)
+        self.assertIsInstance(self.user.username, str)
+        self.assertIsInstance(self.user.email, str)
+        self.assertIsInstance(self.user.first_name, str)
+        self.assertIsInstance(self.user.last_name, str)
 
 
 class UserAddressModelTest(TestCase):
@@ -98,11 +94,10 @@ class UserAddressModelTest(TestCase):
             "country": "USA",
         }
         user = User.objects.create(**fake_user_data())
-        profile = UserProfile.objects.create(user=user)
-        cls.address = UserAddress.objects.create(user=profile, **address_data)
+        cls.address = UserAddress.objects.create(user=user, **address_data)
 
     def test_it_has_correct_fields(self):
-        self.assertIsInstance(self.address.user, UserProfile)
+        self.assertIsInstance(self.address.user, User)
         self.assertIsInstance(self.address.street, str)
         self.assertIsInstance(self.address.city, str)
         self.assertIsInstance(self.address.state, str)
@@ -128,8 +123,7 @@ class PhotoModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         user = User.objects.create(username="user1")
-        cls.user_profile = UserProfile.objects.create(user=user)
-        cls.pet = Pet.objects.create(**fake_pet_data(user=cls.user_profile))
+        cls.pet = Pet.objects.create(**fake_pet_data(user=user))
         cls.photo = Photo(
             pet=cls.pet,
             order=0,
@@ -148,15 +142,16 @@ class CommentModelTest(TestCase):
     def setUpTestData(cls):
         cls.users = []
         for i in range(3):
-            user = User.objects.create(username=f"user{i}")
-            cls.users.append(UserProfile.objects.create(user=user))
+            cls.users.append(
+                User.objects.create(**fake_user_data(username=f"user_{i}"))
+            )
 
         pet = Pet.objects.create(**fake_pet_data(user=cls.users[0]))
 
-        for user_profile in cls.users:
-            comment = Comment.objects.create(user=user_profile, pet=pet, text="comment")
+        for user in cls.users:
+            comment = Comment.objects.create(user=user, pet=pet, text="comment")
             Comment.objects.create(
-                user=user_profile,
+                user=user,
                 pet=pet,
                 reply_to=comment,
                 text="reply",
@@ -164,7 +159,7 @@ class CommentModelTest(TestCase):
 
     def test_it_has_correct_fields(self):
         comment = Comment.objects.all().first()
-        self.assertIsInstance(comment.user, UserProfile)
+        self.assertIsInstance(comment.user, User)
         self.assertIsInstance(comment.pet, Pet)
         self.assertIsInstance(comment.text, str)
 
