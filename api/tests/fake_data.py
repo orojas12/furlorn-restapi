@@ -46,17 +46,31 @@ def fake_pet_data(user, include_location=False, exclude: list = None, **kwargs):
     return data
 
 
-def fake_user_data(partial=False, **kwargs):
-    user = {
-        "username": ("user1" if not kwargs.get("username") else kwargs["username"]),
-        "first_name": "oscar",
-        "last_name": "rojas",
-        "email": "oscar@email.com",
-        "password": "apples",
-    }
-    if partial:
-        user = {**kwargs}
-    return user
+def fake_user_data(exclude: list = None, **kwargs):
+    id = str(uuid4())
+
+    fields = [
+        {"name": "username", "default": f"user_{id}"},
+        {"name": "first_name", "default": "oscar"},
+        {"name": "last_name", "default": "rojas"},
+        {"name": "email", "default": "oscar@email.com"},
+        {"name": "password", "default": "apples"},
+    ]
+
+    data = dict()
+    fields_to_remove = []
+    if exclude:
+        for field in fields:
+            if field["name"] in exclude:
+                fields_to_remove.append(field)
+
+    for field in fields_to_remove:
+        fields.remove(field)
+
+    for field in fields:
+        data[field["name"]] = kwargs.get(field["name"], field["default"])
+
+    return data
 
 
 def fake_image_file():
