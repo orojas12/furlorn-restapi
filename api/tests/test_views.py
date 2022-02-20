@@ -1,138 +1,156 @@
-from django.contrib.auth.models import User
-from django.urls import reverse
-from rest_framework import status
-from rest_framework.test import APITestCase
+from unittest.mock import patch
 
-from api.models import Pet
+from api.models import Pet, User
 from api.serializers import PetSerializer
 from api.tests.fake_data import fake_pet_data, fake_user_data
+from api.views import UserDetail, UserList
+from django.test import TestCase
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APIRequestFactory
 
 
-class UserListTest(APITestCase):
+class UserListTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.url = reverse("user-list")
-        User.objects.create(**fake_user_data())
+        cls.factory = APIRequestFactory()
 
-    def test_list(self):
-        response = self.client.get(self.url)
-        data = response.json()
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(data), 1)
-
-    def test_create(self):
-        data = fake_user_data(username="daniel")
-        response = self.client.post(self.url, data, format="json")
-        user = User.objects.get(username="daniel")
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(User.objects.count(), 2)
-        self.assertEqual(user.username, data["username"])
-        self.assertEqual(user.first_name, data["first_name"])
-        self.assertEqual(user.last_name, data["last_name"])
-        self.assertEqual(user.email, data["email"])
-
-
-class UserDetailTest(APITestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.url = reverse("user-detail", kwargs={"pk": 1})
-        User.objects.create(**fake_user_data())
-
-    def test_retrieve(self):
-        response = self.client.get(self.url)
-        data = response.json()
-        user = User.objects.get()
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(data["username"], user.username)
-        self.assertEqual(data["first_name"], user.first_name)
-        self.assertEqual(data["last_name"], user.last_name)
-        self.assertEqual(data["email"], user.email)
-
-    def test_update(self):
+    def test_post_201_response(self):
         data = fake_user_data()
-        data["first_name"] = "daniel"
-        response = self.client.put(self.url, data, format="json")
-        user = User.objects.get()
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(user.username, data["username"])
-        self.assertEqual(user.first_name, data["first_name"])
-        self.assertEqual(user.last_name, data["last_name"])
-        self.assertEqual(user.email, data["email"])
-
-    def test_update_partial(self):
-        partial_data = fake_user_data(partial=True, last_name="padilla")
-        response = self.client.patch(self.url, partial_data, format="json")
-        user = User.objects.get()
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(user.last_name, partial_data["last_name"])
-
-    def test_destroy(self):
-        response = self.client.delete(self.url)
-        users = User.objects.all()
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(len(users), 0)
-
-
-class PetListTest(APITestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.url = reverse("pet-list")
-        user = User.objects.create(**fake_user_data())
-        Pet.objects.create(**fake_pet_data(user=user))
-
-    def test_list(self):
-        response = self.client.get(self.url)
-        data = response.json()
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(data), 1)
-
-    def test_create(self):
-        user_pk = User.objects.get().pk
-        pet_data = fake_pet_data(user=user_pk)
-        response = self.client.post(self.url, pet_data, format="json")
-        data = response.json()
+        request = self.factory.post(self.url, data, format="json")
+        response = UserList.as_view()(request)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        for key in pet_data:
-            if key == "user":
-                continue
-            self.assertEqual(pet_data[key], data[key])
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
+
+    def test_post_400_response(self):
+        data = fake_user_data(exclude=["password"])
+        request = self.factory.post(self.url, data, format="json")
+        response = UserList.as_view()(request)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
+
+    @patch("api.views.UserSerializer.save")
+    def test_post_500_response(self, mock_save):
+        mock_save.side_effect = Exception("test exception")
+        data = fake_user_data()
+        request = self.factory.post(self.url, data, format="json")
+        response = UserList.as_view()(request)
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
 
 
-class PetDetailTest(APITestCase):
+class UserDetailTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.url = reverse("pet-detail", kwargs={"pk": 1})
-        user = User.objects.create(**fake_user_data())
-        Pet.objects.create(**fake_pet_data(user=user))
+        cls.factory = APIRequestFactory()
+        cls.user = User.objects.create(**fake_user_data())
+        cls.kwargs = {"pk": cls.user.id}
+        cls.url = reverse("user-detail", kwargs=cls.kwargs)
 
-    def test_retrieve(self):
-        serializer = PetSerializer(Pet.objects.get())
-        pet_data = serializer.data
-        response = self.client.get(self.url)
-        data = response.json()
+    def test_get_200_response(self):
+        request = self.factory.get(self.url)
+        response = UserDetail.as_view()(request, **self.kwargs)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for key in data:
-            self.assertEqual(data[key], pet_data[key])
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
 
-    def test_update(self):
-        serializer = PetSerializer(Pet.objects.get())
-        data = serializer.data
-        data["name"] = "maya"
-        response = self.client.put(self.url, data, format="json")
+    def test_get_404_response(self):
+        request = self.factory.get(self.url)
+        response = UserDetail.as_view()(request, pk=0)  # non-existing pk
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
+
+    def test_patch_200_response(self):
+        data = {"email": "newemail@email.com"}
+        request = self.factory.patch(self.url, data, format="json")
+        response = UserDetail.as_view()(request, **self.kwargs)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        updated_data = response.json()
-        for key, value in updated_data.items():
-            self.assertEqual(value, data[key])
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
 
-    def test_update_partial(self):
-        data = {"name": "Dakota"}
-        response = self.client.patch(self.url, data, format="json")
-        pet_data = response.json()
+    def test_patch_404_response(self):
+        data = {"user": {"email": "newemail@email.com"}}
+        request = self.factory.patch(self.url, data, format="json")
+        response = UserDetail.as_view()(request, pk=0)  # non-existing pk
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
+
+    def test_patch_400_response(self):
+        data = {"user_data": {"email": "newemail@email.com"}}  # invalid key name
+        request = self.factory.patch(self.url, data, format="json")
+        response = UserDetail.as_view()(request, **self.kwargs)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
+
+    @patch("api.views.UserSerializer.save")
+    def test_patch_500_response(self, mock_save):
+        mock_save.side_effect = Exception("test exception")
+        data = fake_user_data(exclude=["email"])
+        request = self.factory.patch(self.url, data, format="json")
+        response = UserDetail.as_view()(request, **self.kwargs)
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
+
+    def test_put_200_response(self):
+        data = fake_user_data(username="updateduser1")
+        request = self.factory.put(self.url, data, format="json")
+        response = UserDetail.as_view()(request, **self.kwargs)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(pet_data["name"], data["name"])
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
 
-    def test_destroy(self):
-        response = self.client.delete(self.url)
-        pets = Pet.objects.all()
+    def test_put_404_response(self):
+        data = fake_user_data(username="updateduser1")
+        request = self.factory.put(self.url, data, format="json")
+        response = UserDetail.as_view()(request, pk=0)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
+
+    def test_put_400_response(self):
+        data = fake_user_data(exclude=["email"])
+        request = self.factory.put(self.url, data, format="json")
+        response = UserDetail.as_view()(request, **self.kwargs)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
+
+    @patch("api.views.UserSerializer.save")
+    def test_put_500_response(self, mock_save):
+        mock_save.side_effect = Exception("test exception")
+        data = fake_user_data(username="updateduser1")
+        request = self.factory.put(self.url, data, format="json")
+        response = UserDetail.as_view()(request, **self.kwargs)
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
+
+    def test_delete_204_response(self):
+        request = self.factory.delete(self.url)
+        response = UserDetail.as_view()(request, **self.kwargs)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(len(pets), 0)
+        self.assertEqual(response.data, None)
+
+    def test_delete_404_response(self):
+        request = self.factory.delete(self.url)
+        response = UserDetail.as_view()(request, pk=0)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
+
+    @patch("api.views.User.delete")
+    def test_delete_500_response(self, mock_delete):
+        mock_delete.side_effect = Exception("test exception")
+        request = self.factory.delete(self.url)
+        response = UserDetail.as_view()(request, **self.kwargs)
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
