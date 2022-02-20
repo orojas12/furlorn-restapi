@@ -20,6 +20,30 @@ class UserSerializerTest(TestCase):
             self.assertIn(key, serializer.data)
         self.assertEqual(len(serializer.data), len(keys))
 
+    def test_create(self):
+        data = fake_user_data(username="user1")
+        serializer = UserSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        user = serializer.save()
+        self.assertIsInstance(user, User)
+        self.assertEqual(user.username, data["username"])
+
+    def test_update(self):
+        data = fake_user_data(username="user2")
+        serializer = UserSerializer(instance=self.user, data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, data["username"])
+
+    def test_partial_update(self):
+        data = {"username": "user3"}
+        serializer = UserSerializer(instance=self.user, data=data, partial=True)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, data["username"])
+
     def test_deserializes_required_fields(self):
         valid_data = {
             "username": "oscar123",
@@ -158,5 +182,7 @@ class PhotoSerializerTest(TestCase):
 
     def test_deserializes_all_fields(self):
         serializer = PhotoSerializer(data={"order": 1, "file": fake_image_file()})
+        serializer.is_valid()
+        print(serializer.errors)
         self.assertTrue(serializer.is_valid())
         self.assertEqual(len(serializer.validated_data), len(self.fields))
