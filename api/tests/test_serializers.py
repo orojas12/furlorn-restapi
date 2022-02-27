@@ -98,7 +98,7 @@ class PetSerializerTest(TestCase):
             "user",
             "photos",
         ]
-        data = fake_pet_data(user=self.user.id, include_location=True)
+        data = fake_pet_data(user=self.user, serializable=True)
         data["photos"] = [{"order": 0, "file": fake_image_file()}]
         serializer = PetSerializer(data=data)
         self.assertTrue(serializer.is_valid())
@@ -107,8 +107,8 @@ class PetSerializerTest(TestCase):
 
     def test_deserializes_required_fields(self):
         data = fake_pet_data(
-            user=self.user.id,
-            include_location=True,
+            user=self.user,
+            serializable=True,
             exclude=[
                 "name",
                 "age",
