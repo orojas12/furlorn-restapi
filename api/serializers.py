@@ -85,7 +85,7 @@ class PetSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         breed_list = validated_data.pop("breed", [])
-        location_data = validated_data.pop("last_known_location", None)
+        location_data = validated_data.pop("last_known_location")
         photos = validated_data.pop("photos", [])
         pet = Pet.objects.create(**validated_data)
 
