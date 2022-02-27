@@ -1,11 +1,12 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from rest_framework import status, views
-from rest_framework.parsers import JSONParser, MultiPartParser
+from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 
 from api.models import Pet, User
 from api.serializers import PetSerializer, UserSerializer
+from api.parsers import MultiPartJSONParser
 
 
 class UserList(views.APIView):
@@ -85,7 +86,28 @@ class UserDetail(views.APIView):
 
 
 class PetList(views.APIView):
-    pass
+    """A View class for searching for lost and found pets and creating new posts."""
+
+    parser_classes = [MultiPartJSONParser]
+
+    def get(self, request):
+        pets = Pet.objects.all()
+        serializer = PetSerializer(pets, many=True)
+        return response_200(serializer.data)
+
+    def post(self, request):
+        data = request.data
+        for i, file in enumerate(data["photos"]):
+            data["photos"][i] = {"order": i, "file": file}
+        serializer = PetSerializer(data=request.data)
+        if not serializer.is_valid():
+            return response_400(serializer.errors)
+        try:
+            serializer.save()
+        except Exception as e:
+            print(e)
+            return response_500()
+        return response_201(serializer.data)
 
 
 class PetDetail(views.APIView):
