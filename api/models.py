@@ -12,8 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class User(AbstractUser):
-    id = models.UUIDField(primary_key=True, default=uuid4)
-    email = models.EmailField("email address", blank=False)
+    email = models.EmailField("email address")
 
 
 class UserAddress(models.Model):
@@ -63,7 +62,6 @@ class Pet(models.Model):
         FOUND = "found"
         REUNITED = "reunited"
 
-    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     name = models.CharField(max_length=50, blank=True, default="")
     animal = models.CharField(max_length=50, choices=Animal.choices)
     breed = models.ManyToManyField("Breed")
@@ -93,7 +91,6 @@ class PetLastKnownLocation(models.Model):
 
 
 class Photo(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     order = models.IntegerField(default=0)
     pet = models.ForeignKey("Pet", related_name="photos", on_delete=models.CASCADE)
     file = models.ImageField()

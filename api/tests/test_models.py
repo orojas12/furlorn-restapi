@@ -36,7 +36,7 @@ class PetModelTest(TestCase):
 
     def test_it_has_correct_fields(self):
         pet = self.pet1
-        self.assertIsInstance(pet.id, UUID)
+        self.assertIsInstance(pet.id, int)
         self.assertIsInstance(pet.name, str)
         self.assertIsInstance(pet.animal, str),
         self.assertIsInstance(pet.age, int)
@@ -76,7 +76,7 @@ class UserModelTest(TestCase):
         cls.user = User.objects.create(**fake_user_data())
 
     def test_it_has_correct_fields(self):
-        self.assertIsInstance(self.user.id, UUID)
+        self.assertIsInstance(self.user.id, int)
         self.assertIsInstance(self.user.username, str)
         self.assertIsInstance(self.user.email, str)
         self.assertIsInstance(self.user.first_name, str)
@@ -97,6 +97,7 @@ class UserAddressModelTest(TestCase):
         cls.address = UserAddress.objects.create(user=user, **address_data)
 
     def test_it_has_correct_fields(self):
+        self.assertIsInstance(self.address.id, int)
         self.assertIsInstance(self.address.user, User)
         self.assertIsInstance(self.address.street, str)
         self.assertIsInstance(self.address.city, str)
@@ -115,6 +116,7 @@ class BreedModelTest(TestCase):
 
     def test_it_has_correct_fields(self):
         breed = Breed.objects.all().first()
+        self.assertIsInstance(breed.id, int)
         self.assertIsInstance(breed.name, str)
         self.assertIsInstance(breed.animal, str)
 
@@ -131,7 +133,6 @@ class PhotoModelTest(TestCase):
         )
 
     def test_it_has_correct_fields(self):
-        self.assertIsInstance(self.photo.id, UUID)
         self.assertIsInstance(self.photo.order, int)
         self.assertIsInstance(self.photo.file, File)
         self.assertIsInstance(self.photo.pet, Pet)
@@ -159,6 +160,7 @@ class CommentModelTest(TestCase):
 
     def test_it_has_correct_fields(self):
         comment = Comment.objects.all().first()
+        self.assertIsInstance(comment.id, int)
         self.assertIsInstance(comment.user, User)
         self.assertIsInstance(comment.pet, Pet)
         self.assertIsInstance(comment.text, str)
