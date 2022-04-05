@@ -1,20 +1,29 @@
 from typing import Mapping
-from rest_framework import serializers
+from rest_framework.serializers import (
+    Serializer,
+    ModelSerializer,
+    ValidationError,
+    IntegerField,
+    ImageField,
+    CharField,
+)
 
 from api.models import Pet, PetLastKnownLocation, Photo, User
+from api.validators import PasswordLengthValidator
 
 
-class PhotoSerializer(serializers.ModelSerializer):
+class PhotoSerializer(ModelSerializer):
     """
-    Serializer class for Photo model.
+    Serializer class for pet photos. This is only used inside PetSerializer
+    and is not meant to be used by itself.
     """
 
     class Meta:
         model = Photo
         fields = ["order", "file"]
 
-    order = serializers.IntegerField()
-    file = serializers.ImageField()
+    order = IntegerField()
+    file = ImageField()
 
     def validate(self, data):
         if hasattr(self, "initial_data"):
@@ -22,9 +31,9 @@ class PhotoSerializer(serializers.ModelSerializer):
         return data
 
 
-class UserLikeSerializer(serializers.ModelSerializer):
+class UserLikeSerializer(ModelSerializer):
     """
-    Serializer class for UserLike model.
+    Serializer class for adding a like to a post.
     """
 
     class Meta:
@@ -37,7 +46,7 @@ class UserLikeSerializer(serializers.ModelSerializer):
         return data
 
 
-class PetLastKnownLocationSerializer(serializers.ModelSerializer):
+class PetLastKnownLocationSerializer(ModelSerializer):
     """
     Serializer class for PetLastKnownLocation model.
     """
@@ -52,9 +61,9 @@ class PetLastKnownLocationSerializer(serializers.ModelSerializer):
         return data
 
 
-class PetSerializer(serializers.ModelSerializer):
+class PetSerializer(ModelSerializer):
     """
-    Serializer class for Pet model.
+    Serializer class for lost/found pets.
     """
 
     last_known_location = PetLastKnownLocationSerializer()
@@ -81,7 +90,7 @@ class PetSerializer(serializers.ModelSerializer):
             "photos",
             "last_known_location",
         ]
-        extra_kwargs = {"breed": {"required": False, "default": None}}
+        extra_kwargs = {"breed": {"required": False, "default": []}}
 
     def create(self, validated_data):
         breed_list = validated_data.pop("breed", [])
@@ -100,25 +109,45 @@ class PetSerializer(serializers.ModelSerializer):
 
         return pet
 
+    def update(self, instance, validated_data):
+        """
+        This method allows for updating nested objects which cannot
+        be done with the default ModelSerializer update() method.
+        """
+
+        # Prevent 'user' from being updated
+        validated_data.pop("user", None)
+
+        location_data = validated_data.pop("last_known_location", None)
+        if location_data:
+            location = PetLastKnownLocation.objects.filter(pet=instance).first()
+            location.latitude = location_data.get("latitude", location.latitude)
+            location.longitude = location_data.get("longitude", location.longitude)
+        return super().update(instance, validated_data)
+
     def validate(self, data):
         if hasattr(self, "initial_data"):
             raise_if_unknown_fields(self.initial_data, PetSerializer)
         return data
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(ModelSerializer):
     pets = PetSerializer(many=True, read_only=True)
     """
-    Serializer class for User model.
+    Serializer class for reading and updating users.
     """
 
     class Meta:
         model = User
-        fields = ["username", "first_name", "last_name", "password", "email", "pets"]
-        extra_kwargs = {
-            "password": {"write_only": True},
-            "email": {"required": True, "write_only": True},
-        }
+        fields = ["username", "first_name", "last_name", "email", "pets"]
+
+    def create(self, validated_data):
+        raise NotImplementedError(
+            "UserSerializer cannot be used to create new users. Please use RegisterUserSerializer."
+        )
+
+    def update(self, instance, validated_data):
+        return super().update(instance, validated_data)
 
     def validate(self, data):
         if hasattr(self, "initial_data"):
@@ -126,8 +155,55 @@ class UserSerializer(serializers.ModelSerializer):
         return data
 
 
-def raise_if_unknown_fields(data: Mapping, serializer_cls: serializers.ModelSerializer):
+class RegisterUserSerializer(ModelSerializer):
+    """Serializer class for registering new users."""
+
+    password = CharField(
+        max_length=128,
+        validators=[PasswordLengthValidator()],
+        write_only=True,
+    )
+
+    class Meta:
+        model = User
+        fields = ["username", "password", "email", "first_name", "last_name"]
+        extra_kwargs = {
+            "email": {"write_only": True},
+        }
+
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data)
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError(
+            "RegisterUserSerializer cannot be used to update users. Please use UserSerializer."
+        )
+
+
+class ChangePasswordSerializer(Serializer):
+    """Serializer class for changing a user's password."""
+
+    old_password = CharField(max_length=128)
+    new_password = CharField(
+        max_length=128,
+        validators=[PasswordLengthValidator()],
+    )
+
+    def update(self, instance, validated_data):
+        instance.set_password(validated_data["new_password"])
+        instance.save()
+        return instance
+
+    def validate(self, data):
+        # Verify old password before updating.
+        if self.instance.check_password(data["old_password"]):
+            return data
+        else:
+            raise ValidationError("Incorrect password.")
+
+
+def raise_if_unknown_fields(data: Mapping, serializer_cls: ModelSerializer):
     """Raises a ValidationError if data has fields that do not belong in the ModelSerializer class."""
     unknown_fields = set(data.keys()) - set(serializer_cls.Meta.fields)
     if unknown_fields:
-        raise serializers.ValidationError(f"Invalid field(s): {unknown_fields}")
+        raise ValidationError(f"Invalid field(s): {unknown_fields}")
