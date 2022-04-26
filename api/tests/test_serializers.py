@@ -1,16 +1,18 @@
-from api.models import Pet, Photo, User
+from api.models import Pet, Photo, User, Post
 from api.serializers import (
     ChangePasswordSerializer,
+    LoginUserSerializer,
     PetSerializer,
     PhotoSerializer,
     UserSerializer,
     RegisterUserSerializer,
 )
 from api.tests.fake_data import (
+    FakeUser,
+    FakePet,
+    FakePost,
     fake_image_file,
     fake_password,
-    fake_pet_data,
-    fake_user_data,
 )
 from django.test import TestCase
 
@@ -18,14 +20,14 @@ from django.test import TestCase
 class UserSerializerTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create(**fake_user_data())
+        cls.user = User.objects.create(**FakeUser().data)
 
     def test_returns_correct_fields(self):
         """
         Test that UserSerializer.data returns the specified fields only.
         """
         serializer = UserSerializer(self.user)
-        fields = ["username", "first_name", "last_name", "email", "pets"]
+        fields = ["username", "first_name", "last_name", "email", "posts"]
         for field in fields:
             self.assertIn(field, serializer.data)
         self.assertEqual(len(serializer.data), len(fields))
@@ -34,7 +36,7 @@ class UserSerializerTest(TestCase):
         """
         Test that UserSerializer updates a user successfully.
         """
-        data = fake_user_data(exclude=["password"])
+        data = FakeUser().exclude("password")
         serializer = UserSerializer(instance=self.user, data=data)
         self.assertTrue(serializer.is_valid(raise_exception=True))
         serializer.save()
@@ -76,12 +78,11 @@ class UserSerializerTest(TestCase):
 class PetSerializerTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create(**fake_user_data())
-
-    def test_deserializes_all_fields(self):
-        fields = [
+        cls.pet = Pet.objects.create(**FakePet().data)
+        cls.fields = [
+            "id",
             "name",
-            "animal",
+            "type",
             "breed",
             "age",
             "sex",
@@ -89,86 +90,25 @@ class PetSerializerTest(TestCase):
             "color",
             "weight",
             "microchip",
-            "information",
-            "status",
-            "last_known_location",
-            "user",
-            "photos",
         ]
-        data = fake_pet_data(user=self.user, serializable=True)
-        data["photos"] = [{"order": 0, "file": fake_image_file()}]
-        serializer = PetSerializer(data=data)
-        self.assertTrue(serializer.is_valid())
-        for field in fields:
-            self.assertIn(field, serializer.validated_data)
 
-    def test_deserializes_required_fields(self):
-        data = fake_pet_data(
-            user=self.user,
-            serializable=True,
-            exclude=[
-                "name",
-                "age",
-                "sex",
-                "eye_color",
-                "color",
-                "weight",
-                "information",
-                "microchip",
-            ],
-        )
-        serializer = PetSerializer(data=data)
-        self.assertTrue(serializer.is_valid())
-
-    def test_serializes_all_fields(self):
-        fields = [
-            "name",
-            "age",
-            "sex",
-            "eye_color",
-            "color",
-            "weight",
-            "information",
-            "microchip",
-            "animal",
-            "breed",
-            "status",
-            "last_known_location",
-            "user",
-            "photos",
-            "likes",
-        ]
-        pet = Pet.objects.create(**fake_pet_data(user=self.user))
-        serializer = PetSerializer(pet)
-        for field in fields:
+    def test_returns_correct_fields(self):
+        """
+        Test that PetSerializer.data returns the specified fields only.
+        """
+        serializer = PetSerializer(instance=self.pet)
+        for field in self.fields:
             self.assertIn(field, serializer.data)
-
-        pet = Pet.objects.create(
-            **fake_pet_data(
-                user=self.user,
-                exclude=[
-                    "name",
-                    "age",
-                    "sex",
-                    "eye_color",
-                    "color",
-                    "weight",
-                    "information",
-                    "microchip",
-                ],
-            )
-        )
-        serializer = PetSerializer(pet)
-        for field in fields:
-            self.assertIn(field, serializer.data)
+        self.assertEqual(len(self.fields), len(serializer.data))
 
 
 class PhotoSerializerTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        user = User.objects.create(**fake_user_data())
-        cls.pet = Pet.objects.create(**fake_pet_data(user=user))
-        cls.photo = Photo(pet=cls.pet, file=fake_image_file())
+        user = User.objects.create(**FakeUser().data)
+        pet = Pet.objects.create(**FakePet().data)
+        post = Post.objects.create(user=user, pet=pet, **FakePost().data)
+        cls.photo = Photo(post=post, file=fake_image_file())
         cls.fields = ["order", "file"]
 
     def test_serializes_all_fields(self):
@@ -186,7 +126,7 @@ class PhotoSerializerTest(TestCase):
 class RegisterUserSerializerTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user_data = fake_user_data()
+        cls.user_data = FakeUser().data
         cls.fields = ["username", "password", "email", "first_name", "last_name"]
 
     def test_registers_user(self):
@@ -204,9 +144,8 @@ class RegisterUserSerializerTest(TestCase):
         """
         Test that RegisterUserSerializer.data returns the specified fields only.
         """
-        serializer = RegisterUserSerializer(data=fake_user_data())
+        serializer = RegisterUserSerializer(data=FakeUser().data)
         serializer.is_valid(raise_exception=True)
-        print(serializer.data)
         fields = ["username", "first_name", "last_name"]
         for field in fields:
             self.assertIn(field, serializer.data)
@@ -216,7 +155,7 @@ class RegisterUserSerializerTest(TestCase):
 class ChangePasswordSerializerTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        user_data = fake_user_data()
+        user_data = FakeUser().data
         cls.old_password = user_data["password"]
         cls.new_password = fake_password()
         cls.user = User.objects.create_user(**user_data)
@@ -235,3 +174,17 @@ class ChangePasswordSerializerTest(TestCase):
         self.assertTrue(serializer.is_valid())
         serializer.save()
         self.assertTrue(self.user.check_password(self.new_password))
+
+
+class LoginUserSerializerTest(TestCase):
+    def test_returns_correct_fields(self):
+        user_data = FakeUser().data
+        serializer = LoginUserSerializer(
+            data={
+                "username": user_data["username"],
+                "password": user_data["password"],
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        self.assertIn("username", serializer.data)
+        self.assertEqual(len(serializer.data), 1)

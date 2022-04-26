@@ -3,27 +3,23 @@ from rest_framework.serializers import (
     Serializer,
     ModelSerializer,
     ValidationError,
-    IntegerField,
-    ImageField,
     CharField,
+    StringRelatedField,
 )
 
-from api.models import Pet, PetLastKnownLocation, Photo, User
+from api.models import Pet, Photo, User, Post
 from api.validators import PasswordLengthValidator
 
 
 class PhotoSerializer(ModelSerializer):
     """
-    Serializer class for pet photos. This is only used inside PetSerializer
-    and is not meant to be used by itself.
+    Serializer class for pet photos. This is only used inside PostSerializer
+    and is not meant to be directly used by a view.
     """
 
     class Meta:
         model = Photo
         fields = ["order", "file"]
-
-    order = IntegerField()
-    file = ImageField()
 
     def validate(self, data):
         if hasattr(self, "initial_data"):
@@ -31,51 +27,18 @@ class PhotoSerializer(ModelSerializer):
         return data
 
 
-class UserLikeSerializer(ModelSerializer):
-    """
-    Serializer class for adding a like to a post.
-    """
-
-    class Meta:
-        model = User
-        fields = ["id", "username"]
-
-    def validate(self, data):
-        if hasattr(self, "initial_data"):
-            raise_if_unknown_fields(self.initial_data, UserLikeSerializer)
-        return data
-
-
-class PetLastKnownLocationSerializer(ModelSerializer):
-    """
-    Serializer class for PetLastKnownLocation model.
-    """
-
-    class Meta:
-        model = PetLastKnownLocation
-        fields = ["latitude", "longitude"]
-
-    def validate(self, data):
-        if hasattr(self, "initial_data"):
-            raise_if_unknown_fields(self.initial_data, PetLastKnownLocationSerializer)
-        return data
-
-
 class PetSerializer(ModelSerializer):
     """
-    Serializer class for lost/found pets.
+    Serializer class for lost/found pets. Only used inside PostSerializer
+    and not meant to be directly used by a view.
     """
-
-    last_known_location = PetLastKnownLocationSerializer()
-    photos = PhotoSerializer(many=True, required=False)
-    likes = UserLikeSerializer(many=True, read_only=True)
 
     class Meta:
         model = Pet
         fields = [
             "id",
             "name",
-            "animal",
+            "type",
             "breed",
             "age",
             "sex",
@@ -83,47 +46,11 @@ class PetSerializer(ModelSerializer):
             "color",
             "weight",
             "microchip",
-            "information",
-            "status",
-            "user",
-            "likes",
-            "photos",
-            "last_known_location",
         ]
-        extra_kwargs = {"breed": {"required": False, "default": []}}
-
-    def create(self, validated_data):
-        breed_list = validated_data.pop("breed", [])
-        location_data = validated_data.pop("last_known_location")
-        photos = validated_data.pop("photos", [])
-        pet = Pet.objects.create(**validated_data)
-
-        if breed_list:
-            for breed_id in breed_list:
-                pet.breed.add(breed_id)
-
-        PetLastKnownLocation.objects.create(pet=pet, **location_data)
-
-        for photo_data in photos:
-            Photo.objects.create(pet=pet, **photo_data)
-
-        return pet
-
-    def update(self, instance, validated_data):
-        """
-        This method allows for updating nested objects which cannot
-        be done with the default ModelSerializer update() method.
-        """
-
-        # Prevent 'user' from being updated
-        validated_data.pop("user", None)
-
-        location_data = validated_data.pop("last_known_location", None)
-        if location_data:
-            location = PetLastKnownLocation.objects.filter(pet=instance).first()
-            location.latitude = location_data.get("latitude", location.latitude)
-            location.longitude = location_data.get("longitude", location.longitude)
-        return super().update(instance, validated_data)
+        extra_kwargs = {
+            "breed": {"required": False, "default": []},
+            "id": {"read_only": True},
+        }
 
     def validate(self, data):
         if hasattr(self, "initial_data"):
@@ -131,23 +58,97 @@ class PetSerializer(ModelSerializer):
         return data
 
 
+class PostSerializer(ModelSerializer):
+    """
+    Serializer class for reading/updating a post.
+    """
+
+    pet = PetSerializer(read_only=True)
+    user = StringRelatedField(read_only=True)
+    photos = PhotoSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Post
+        fields = [
+            "description",
+            "likes",
+            "location_lat",
+            "location_long",
+            "status",
+            "pet",
+            "photos",
+            "user",
+        ]
+        extra_kwargs = {"likes": {"read_only": True}}
+
+    def create(self, validated_data):
+        raise NotImplementedError(
+            "PostSerializer cannot be used to create new posts. Please use CreatePostSerializer."
+        )
+
+    def validate(self, data):
+        if hasattr(self, "initial_data"):
+            raise_if_unknown_fields(self.initial_data, PostSerializer)
+        return data
+
+
+class CreatePostSerializer(ModelSerializer):
+    """
+    Serializer class for creating a new post.
+    """
+
+    pet = PetSerializer()
+    photos = PhotoSerializer(many=True, required=False)
+
+    class Meta:
+        model = Post
+        fields = [
+            "description",
+            "location_lat",
+            "location_long",
+            "status",
+            "pet",
+            "photos",
+        ]
+
+    def create(self, validated_data):
+        pet_data = validated_data.pop("pet")
+        breeds = pet_data.pop("breed", [])
+        photos = validated_data.pop("photos", [])
+        user = self.context.get("user", None)
+
+        pet = Pet.objects.create(**pet_data)
+        pet.breed.set(breeds)
+        post = Post.objects.create(pet=pet, user=user, **validated_data)
+        for photo_data in photos:
+            Photo.objects.create(post=post, **photo_data)
+        return post
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError(
+            "CreatePostSerializer cannot be used to update posts. Please use PostSerializer."
+        )
+
+    def validate(self, data):
+        if hasattr(self, "initial_data"):
+            raise_if_unknown_fields(self.initial_data, CreatePostSerializer)
+        return data
+
+
 class UserSerializer(ModelSerializer):
-    pets = PetSerializer(many=True, read_only=True)
+    posts = PostSerializer(many=True, read_only=True)
     """
     Serializer class for reading and updating users.
     """
 
     class Meta:
         model = User
-        fields = ["username", "first_name", "last_name", "email", "pets"]
+        fields = ["username", "first_name", "last_name", "email", "posts"]
 
     def create(self, validated_data):
         raise NotImplementedError(
             "UserSerializer cannot be used to create new users. Please use RegisterUserSerializer."
         )
-
-    def update(self, instance, validated_data):
-        return super().update(instance, validated_data)
 
     def validate(self, data):
         if hasattr(self, "initial_data"):
@@ -167,9 +168,7 @@ class RegisterUserSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ["username", "password", "email", "first_name", "last_name"]
-        extra_kwargs = {
-            "email": {"write_only": True},
-        }
+        extra_kwargs = {"email": {"write_only": True}}
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
@@ -178,6 +177,11 @@ class RegisterUserSerializer(ModelSerializer):
         raise NotImplementedError(
             "RegisterUserSerializer cannot be used to update users. Please use UserSerializer."
         )
+
+    def validate(self, data):
+        if hasattr(self, "initial_data"):
+            raise_if_unknown_fields(self.initial_data, RegisterUserSerializer)
+        return data
 
 
 class ChangePasswordSerializer(Serializer):
@@ -200,6 +204,11 @@ class ChangePasswordSerializer(Serializer):
             return data
         else:
             raise ValidationError("Incorrect password.")
+
+
+class LoginUserSerializer(Serializer):
+    username = CharField(max_length=150)
+    password = CharField(max_length=128, write_only=True)
 
 
 def raise_if_unknown_fields(data: Mapping, serializer_cls: ModelSerializer):
