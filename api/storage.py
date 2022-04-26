@@ -1,5 +1,6 @@
 import mimetypes
 import os
+import logging
 from uuid import uuid4
 
 from boto3.session import Session
@@ -17,6 +18,7 @@ aws = Session(
 )
 bucket = aws.resource("s3").Bucket(settings.S3_STORAGE["BUCKET_NAME"])
 client = aws.client("s3", config=Config(signature_version="s3v4"))
+logger = logging.getLogger(__name__)
 
 
 @deconstructible
@@ -32,12 +34,14 @@ class S3Storage(Storage):
             content.close()
             return name
         except ClientError as e:
+            logger.exception(e)
             raise e
 
     def delete(self, name):
         try:
             bucket.Object(name).delete()
         except ClientError as e:
+            logger.exception(e)
             raise e
 
     def exists(self, name):
@@ -50,6 +54,7 @@ class S3Storage(Storage):
                 return False
             else:
                 # Something else went wrong.
+                logger.exception(e)
                 raise e
 
     def url(self, name):
@@ -61,6 +66,7 @@ class S3Storage(Storage):
             )
             return url
         except ClientError as e:
+            logger.exception(e)
             return None
 
     def get_available_name(self, name, max_length=None):
