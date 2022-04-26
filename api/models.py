@@ -1,18 +1,16 @@
 import logging
-from uuid import uuid4
-
-from boto3 import resource
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-bucket_id = "neighborhoodlostpets.com"
-s3 = resource("s3")
 logger = logging.getLogger(__name__)
 
 
 class User(AbstractUser):
     email = models.EmailField("email address")
+
+    def __str__(self):
+        return self.username
 
 
 class UserAddress(models.Model):
@@ -57,13 +55,8 @@ class Pet(models.Model):
         YELLOW = "yellow"
         GRAY = "gray"
 
-    class Status(models.TextChoices):
-        LOST = "lost"
-        FOUND = "found"
-        REUNITED = "reunited"
-
     name = models.CharField(max_length=50, blank=True, default="")
-    animal = models.CharField(max_length=50, choices=Animal.choices)
+    type = models.CharField(max_length=50, choices=Animal.choices)
     breed = models.ManyToManyField("Breed")
     age = models.PositiveIntegerField(blank=True, null=True)
     sex = models.IntegerField(choices=Sex.choices, blank=True, default=Sex.UNKNOWN)
@@ -75,31 +68,33 @@ class Pet(models.Model):
     )
     weight = models.PositiveIntegerField(blank=True, null=True)
     microchip = models.CharField(max_length=15, blank=True, default="")
-    information = models.CharField(max_length=5000, blank=True, default="")
+
+
+class Post(models.Model):
+    class Status(models.TextChoices):
+        LOST = "lost"
+        FOUND = "found"
+        RESOLVED = "resolved"
+
+    description = models.CharField(max_length=5000, default="")
+    likes = models.PositiveIntegerField(default=0)
+    location_lat = models.DecimalField(max_digits=8, decimal_places=6)
+    location_long = models.DecimalField(max_digits=9, decimal_places=6)
     status = models.CharField(max_length=50, choices=Status.choices)
-
-    user = models.ForeignKey("User", related_name="pets", on_delete=models.CASCADE)
-    likes = models.ManyToManyField("User", related_name="likes", blank=True)
-
-
-class PetLastKnownLocation(models.Model):
-    latitude = models.DecimalField(max_digits=8, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    pet = models.OneToOneField(
-        "Pet", related_name="last_known_location", on_delete=models.CASCADE
-    )
+    pet = models.ForeignKey("Pet", related_name="posts", on_delete=models.CASCADE)
+    user = models.ForeignKey("User", related_name="posts", on_delete=models.CASCADE)
 
 
 class Photo(models.Model):
-    order = models.IntegerField(default=0)
-    pet = models.ForeignKey("Pet", related_name="photos", on_delete=models.CASCADE)
+    order = models.IntegerField()
+    post = models.ForeignKey("Post", related_name="photos", on_delete=models.CASCADE)
     file = models.ImageField()
 
 
 class Comment(models.Model):
     user = models.ForeignKey("User", on_delete=models.CASCADE)
-    pet = models.ForeignKey("Pet", on_delete=models.CASCADE)
+    post = models.ForeignKey("Post", on_delete=models.CASCADE)
     reply_to = models.ForeignKey(
         "self", on_delete=models.CASCADE, blank=True, null=True
     )
-    text = models.CharField(max_length=2000)
+    content = models.CharField(max_length=2000)
