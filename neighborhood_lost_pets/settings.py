@@ -10,17 +10,16 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
+import logging
 import os
 from dotenv import load_dotenv
 from pathlib import Path
-
-from dotenv import load_dotenv
+from datetime import timedelta
 
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
@@ -29,10 +28,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-kbft9u*_kcnbpihh2@4z7)1l7bs$d9!w%f6!k$r1hzd@lzqz&t"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", False)
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -41,12 +39,12 @@ INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
-    "django.contrib.sessions",
     "django.contrib.messages",
-    "django.contrib.staticfiles",
+    "django.contrib.sessions",
 ]
 
 MIDDLEWARE = [
+    "api.middleware.LoggingMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -76,6 +74,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "neighborhood_lost_pets.wsgi.application"
 
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ]
+}
+
+# Sessions
+SESSION_COOKIE_AGE = timedelta(days=1).total_seconds()
+SESSION_COOKIE_SECURE = True
+
 DEFAULT_FILE_STORAGE = "api.storage.S3Storage"
 
 S3_STORAGE = {
@@ -85,6 +93,54 @@ S3_STORAGE = {
     "AWS_REGION": os.environ.get("AWS_REGION"),
 }
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "django.server": {
+            "class": "logging.FileHandler",
+            "filename": "logs/server.log",
+            "formatter": "simple",
+        },
+        "error": {
+            "class": "logging.FileHandler",
+            "filename": "logs/error.log",
+            "formatter": "simple",
+            "level": "ERROR",
+        },
+        "debug": {
+            "class": "logging.FileHandler",
+            "filename": "logs/debug.log",
+            "formatter": "simple",
+            "level": "DEBUG",
+        },
+        "memory": {
+            "class": "api.logging.EventMemoryHandler",
+            "capacity": 100,
+            "flushLevel": logging.ERROR,
+            "target": "debug",
+            "level": "DEBUG",
+        },
+    },
+    "loggers": {
+        "django.server": {
+            "level": "INFO",
+            "handlers": ["django.server"],
+            "propagate": False,
+        },
+        "api": {
+            "level": "DEBUG",
+            "handlers": ["error", "memory"],
+            "propagate": False,
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
@@ -101,9 +157,6 @@ DATABASES = {
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
