@@ -143,7 +143,7 @@ class UserSerializer(ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["username", "first_name", "last_name", "email", "posts"]
+        fields = ["username", "nickname", "posts"]
 
     def create(self, validated_data):
         raise NotImplementedError(
@@ -167,8 +167,7 @@ class RegisterUserSerializer(ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["username", "password", "email", "first_name", "last_name"]
-        extra_kwargs = {"email": {"write_only": True}}
+        fields = ["username", "password", "nickname"]
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)

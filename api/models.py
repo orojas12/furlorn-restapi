@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class User(AbstractUser):
-    email = models.EmailField("email address")
+    nickname = models.CharField(max_length=100, blank=True, default="")
 
     def __str__(self):
         return self.username
