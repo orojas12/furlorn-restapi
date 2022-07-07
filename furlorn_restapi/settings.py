@@ -76,13 +76,16 @@ WSGI_APPLICATION = "furlorn_restapi.wsgi.application"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ]
 }
 
-# Sessions
-SESSION_COOKIE_AGE = timedelta(days=1).total_seconds()
-SESSION_COOKIE_SECURE = True
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
+    
+}
+
 
 DEFAULT_FILE_STORAGE = "api.storage.S3Storage"
 

@@ -9,7 +9,7 @@ from api.tests.fake_data import (
     fake_image_file,
 )
 from api.tests.exceptions import TestException
-from api.views import PostView, PostsView, UserView, RegisterUserView
+from api.views import PostView, PostsView, ProfileView, RegisterUserView
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -61,7 +61,7 @@ class UserViewTest(TestCase):
     def test_get_200_response(self):
         request = self.factory.get(self.url)
         force_authenticate(request, self.user)
-        response = UserView.as_view()(request, **self.kwargs)
+        response = ProfileView.as_view()(request, **self.kwargs)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsInstance(response.data, dict)
         self.assertNotEqual(len(response.data), 0)
@@ -69,7 +69,7 @@ class UserViewTest(TestCase):
     def test_get_404_response(self):
         request = self.factory.get(self.url)
         force_authenticate(request, self.user)
-        response = UserView.as_view()(request, username=0)  # non-existing username
+        response = ProfileView.as_view()(request, username=0)  # non-existing username
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIsInstance(response.data, dict)
         self.assertNotEqual(len(response.data), 0)
@@ -78,7 +78,7 @@ class UserViewTest(TestCase):
         data = FakeUser().exclude(["password"])
         request = self.factory.put(self.url, data, format="json")
         force_authenticate(request, self.user)
-        response = UserView.as_view()(request, **self.kwargs)
+        response = ProfileView.as_view()(request, **self.kwargs)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsInstance(response.data, dict)
         self.assertNotEqual(len(response.data), 0)
@@ -87,7 +87,7 @@ class UserViewTest(TestCase):
         data = FakeUser().exclude(["password"])
         request = self.factory.put(self.url, data, format="json")
         force_authenticate(request, self.user2)
-        response = UserView.as_view()(request, **self.kwargs)
+        response = ProfileView.as_view()(request, **self.kwargs)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertIsInstance(response.data, dict)
         self.assertNotEqual(len(response.data), 0)
@@ -96,7 +96,7 @@ class UserViewTest(TestCase):
         data = FakeUser().exclude(["password"])
         request = self.factory.put(self.url, data, format="json")
         force_authenticate(request, self.user)
-        response = UserView.as_view()(request, username=0)
+        response = ProfileView.as_view()(request, username=0)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIsInstance(response.data, dict)
         self.assertNotEqual(len(response.data), 0)
@@ -105,7 +105,7 @@ class UserViewTest(TestCase):
         data = FakeUser().exclude(["email"])
         request = self.factory.put(self.url, data, format="json")
         force_authenticate(request, self.user)
-        response = UserView.as_view()(request, **self.kwargs)
+        response = ProfileView.as_view()(request, **self.kwargs)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIsInstance(response.data, dict)
         self.assertNotEqual(len(response.data), 0)
@@ -116,7 +116,7 @@ class UserViewTest(TestCase):
         data = FakeUser().exclude(["password"])
         request = self.factory.put(self.url, data, format="json")
         force_authenticate(request, self.user)
-        response = UserView.as_view()(request, **self.kwargs)
+        response = ProfileView.as_view()(request, **self.kwargs)
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertIsInstance(response.data, dict)
         self.assertNotEqual(len(response.data), 0)
@@ -124,14 +124,14 @@ class UserViewTest(TestCase):
     def test_delete_204_response(self):
         request = self.factory.delete(self.url)
         force_authenticate(request, self.user)
-        response = UserView.as_view()(request, **self.kwargs)
+        response = ProfileView.as_view()(request, **self.kwargs)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(response.data, None)
 
     def test_delete_404_response(self):
         request = self.factory.delete(self.url)
         force_authenticate(request, self.user)
-        response = UserView.as_view()(request, username=0)
+        response = ProfileView.as_view()(request, username=0)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIsInstance(response.data, dict)
         self.assertNotEqual(len(response.data), 0)
@@ -141,7 +141,7 @@ class UserViewTest(TestCase):
         mock_delete.side_effect = TestException()
         request = self.factory.delete(self.url)
         force_authenticate(request, self.user)
-        response = UserView.as_view()(request, **self.kwargs)
+        response = ProfileView.as_view()(request, **self.kwargs)
         self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertIsInstance(response.data, dict)
         self.assertNotEqual(len(response.data), 0)

@@ -1,6 +1,5 @@
 import logging
 from django.core.exceptions import ObjectDoesNotExist
-from django.contrib.auth import authenticate, login, logout
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
@@ -17,36 +16,25 @@ from api.serializers import (
     LoginUserSerializer,
 )
 from api.parsers import MultiPartJSONParser
-from api.permissions import IsOwnerOrReadOnly, IsSameUser
+from api.permissions import IsOwnerOrReadOnly
 
 logger = logging.getLogger(__name__)
 
 
-class UserView(APIView):
+class ProfileView(APIView):
     """
     A view class for reading/updating user data, and for deleting users.
     """
 
-    permission_classes = [IsAuthenticated, IsSameUser]
+    permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
 
-    def get(self, request, username=None):
-        try:
-            user = User.objects.get(username=username)
-        except ObjectDoesNotExist:
-            return response_404()
-
-        serializer = UserSerializer(user)
+    def get(self, request):
+        serializer = UserSerializer(request.user)
         return response_200(serializer.data)
 
-    def put(self, request, username=None):
-        try:
-            user = User.objects.get(username=username)
-        except ObjectDoesNotExist:
-            return response_404()
-
-        self.check_object_permissions(request, user)
-        serializer = UserSerializer(user, data=request.data)
+    def put(self, request):
+        serializer = UserSerializer(request.user, data=request.data)
         if serializer.is_valid():
             try:
                 serializer.save()
@@ -57,16 +45,9 @@ class UserView(APIView):
         else:
             return response_400(serializer.errors)
 
-    def delete(self, request, username=None):
+    def delete(self, request):
         try:
-            user = User.objects.get(username=username)
-        except ObjectDoesNotExist:
-            return response_404()
-
-        self.check_object_permissions(request, user)
-
-        try:
-            user.delete()
+            request.user.delete()
             return response_204()
         except Exception as exc:
             logger.exception(exc)
@@ -168,35 +149,6 @@ class RegisterUserView(APIView):
                 return response_500()
         else:
             return response_400(serializer.errors)
-
-
-class LoginUserView(APIView):
-    """A View class for handling login with sessions."""
-
-    parser_classess = [JSONParser]
-
-    def post(self, request):
-        serializer = LoginUserSerializer(data=request.data)
-        if not serializer.is_valid():
-            return response_400(serializer.errors)
-        username = request.data["username"]
-        password = request.data["password"]
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return response_200(serializer.data)
-        else:
-            return response_403()
-
-
-class LogoutUserView(APIView):
-    """A View class for handling logout with sessions."""
-
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        logout(request)
-        return response_200({})
 
 
 def response_200(data):

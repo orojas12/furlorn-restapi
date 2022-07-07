@@ -10,6 +10,7 @@ charset-normalizer==2.0.9
 click==8.0.3
 Django==3.2.9
 djangorestframework==3.12.4
+djangorestframework-simplejwt==5.2.0
 idna==3.3
 jmespath==0.10.0
 mypy-boto3-s3==1.20.17
