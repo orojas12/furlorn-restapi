@@ -19,7 +19,7 @@ from api.tests.fake_data import (
 )
 from django.core.files.base import File
 from django.test import TestCase
-from neighborhood_lost_pets.settings import BASE_DIR
+from furlorn_restapi.settings import BASE_DIR
 
 S3 = boto3.resource("s3")
 BUCKET_ID = "neighborhoodlostpets.com"

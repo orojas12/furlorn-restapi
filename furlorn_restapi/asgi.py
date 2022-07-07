@@ -1,5 +1,5 @@
 """
-ASGI config for neighborhood_lost_pets project.
+ASGI config for furlorn_restapi project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'neighborhood_lost_pets.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'furlorn_restapi.settings')
 
 application = get_asgi_application()
