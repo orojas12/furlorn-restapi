@@ -25,7 +25,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-kbft9u*_kcnbpihh2@4z7)1l7bs$d9!w%f6!k$r1hzd@lzqz&t")
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY", "django-insecure-kbft9u*_kcnbpihh2@4z7)1l7bs$d9!w%f6!k$r1hzd@lzqz&t"
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", False)
@@ -83,7 +85,6 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
-    
 }
 
 
@@ -155,7 +156,7 @@ DATABASES = {
         "USER": os.environ.get("DB_USER"),
         "PASSWORD": os.environ.get("DB_PASSWORD"),
         "HOST": os.environ.get("DB_HOST"),
-        "PORT": os.environ.get("DB_PORT")
+        "PORT": os.environ.get("DB_PORT"),
     }
 }
 
