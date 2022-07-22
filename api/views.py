@@ -7,8 +7,9 @@ from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 
-from api.models import User, Post
+from api.models import Breed, User, Post
 from api.serializers import (
+    BreedSerializer,
     CreatePostSerializer,
     RegisterUserSerializer,
     UserSerializer,
@@ -149,6 +150,17 @@ class RegisterUserView(APIView):
                 return response_500()
         else:
             return response_400(serializer.errors)
+
+
+class BreedsListView(APIView):
+    """A View class for getting a list of all existing breeds."""
+
+    parser_classes = [JSONParser]
+
+    def get(self, request):
+        breeds = Breed.objects.all()
+        serializer = BreedSerializer(breeds, many=True)
+        return response_200(serializer.data)
 
 
 def response_200(data):

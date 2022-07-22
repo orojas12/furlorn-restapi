@@ -7,7 +7,7 @@ from rest_framework.serializers import (
     StringRelatedField,
 )
 
-from api.models import Pet, Photo, User, Post
+from api.models import Breed, Pet, Photo, User, Post
 from api.validators import PasswordLengthValidator
 
 
@@ -203,6 +203,12 @@ class ChangePasswordSerializer(Serializer):
             return data
         else:
             raise ValidationError("Incorrect password.")
+
+
+class BreedSerializer(ModelSerializer):
+    class Meta:
+        model = Breed
+        fields = ["id", "name", "animal"]
 
 
 class LoginUserSerializer(Serializer):
