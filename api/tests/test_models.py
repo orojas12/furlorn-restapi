@@ -2,7 +2,7 @@ from uuid import UUID
 
 import boto3
 from api.models import (
-    Animal,
+    Species,
     Breed,
     Comment,
     Post,
@@ -52,11 +52,11 @@ class PetModelTest(TestCase):
         pet = self.pet
         self.assertIsInstance(pet.id, int)
         self.assertIsInstance(pet.name, str)
-        self.assertIsInstance(pet.type, str),
+        self.assertIsInstance(pet.species, str),
         self.assertIsInstance(pet.age, int)
         self.assertIsInstance(pet.sex, int)
         self.assertIsInstance(pet.eye_color, str)
-        self.assertIsInstance(pet.color, str)
+        self.assertIsInstance(pet.coat_color, str)
         self.assertIsInstance(pet.weight, int)
         self.assertIsInstance(pet.microchip, str)
 
@@ -102,14 +102,14 @@ class BreedModelTest(TestCase):
     def setUpTestData(cls):
         Breed.objects.create(
             name="American Shorthair",
-            animal=Animal.CAT,
+            species=Species.CAT,
         )
 
     def test_it_has_correct_fields(self):
         breed = Breed.objects.all().first()
         self.assertIsInstance(breed.id, int)
         self.assertIsInstance(breed.name, str)
-        self.assertIsInstance(breed.animal, str)
+        self.assertIsInstance(breed.species, str)
 
 
 class PhotoModelTest(TestCase):
