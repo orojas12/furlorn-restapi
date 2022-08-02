@@ -16,7 +16,6 @@ from api.serializers import (
     RegisterUserSerializer,
     UserSerializer,
     PostSerializer,
-    LoginUserSerializer,
 )
 from api.parsers import MultiPartJSONParser
 from api.permissions import IsOwnerOrReadOnly
