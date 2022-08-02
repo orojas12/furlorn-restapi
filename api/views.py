@@ -6,6 +6,8 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
+from rest_framework.authentication import BasicAuthentication
+from knox.views import LoginView as KnoxLoginView
 
 from api.models import Breed, User, Post
 from api.serializers import (
@@ -150,6 +152,10 @@ class RegisterUserView(APIView):
                 return response_500()
         else:
             return response_400(serializer.errors)
+
+
+class LoginView(KnoxLoginView):
+    authentication_classes = [BasicAuthentication]
 
 
 class BreedsListView(APIView):
