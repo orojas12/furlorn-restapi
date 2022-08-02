@@ -38,12 +38,12 @@ class PetSerializer(ModelSerializer):
         fields = [
             "id",
             "name",
-            "type",
+            "species",
             "breed",
             "age",
             "sex",
             "eye_color",
-            "color",
+            "coat_color",
             "weight",
             "microchip",
         ]
@@ -208,7 +208,7 @@ class ChangePasswordSerializer(Serializer):
 class BreedSerializer(ModelSerializer):
     class Meta:
         model = Breed
-        fields = ["id", "name", "animal"]
+        fields = ["id", "name", "species"]
 
 
 class LoginUserSerializer(Serializer):
