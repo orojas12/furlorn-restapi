@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.messages",
     "django.contrib.sessions",
+    "rest_framework",
+    "knox",
 ]
 
 MIDDLEWARE = [
@@ -78,19 +80,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "furlorn_restapi.wsgi.application"
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-]
+CORS_ALLOW_ALL_ORIGINS = True if DEBUG else False
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "knox.auth.TokenAuthentication",
     ]
 }
 
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
+REST_KNOX = {
+    "USER_SERIALIZER": "api.serializers.UserSerializer",
+    "TOKEN_TTL": timedelta(days=1),
+    "AUTO_REFRESH": True,
 }
 
 
