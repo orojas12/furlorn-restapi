@@ -7,7 +7,7 @@ from uuid import uuid4
 from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from api.models import Animal, Sex, Pet
+from api.models import Species, Sex, Pet
 
 
 class FakeData:
@@ -32,7 +32,7 @@ class FakeData:
 class FakePet(FakeData):
     def __init__(self, **kwargs):
         self.name = "Yuna"
-        self.type = "Cat"
+        self.species = "Cat"
         self.age = 2
         self.sex = Sex.FEMALE
         self.eye_color = Pet.Color.YELLOW
@@ -75,7 +75,7 @@ def fake_pet_data(
 
     fields = [
         {"name": "name", "default": "Yuna"},
-        {"name": "animal", "default": Animal.CAT},
+        {"name": "species", "default": Species.CAT},
         {"name": "age", "default": 2},
         {"name": "sex", "default": Sex.FEMALE},
         {"name": "eye_color", "default": Pet.Color.YELLOW},

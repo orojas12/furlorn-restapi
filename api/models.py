@@ -30,15 +30,15 @@ class Sex(models.IntegerChoices):
     NOT_APPLICABLE = 9
 
 
-class Animal(models.TextChoices):
-    DOG = "Dog"
-    CAT = "Cat"
-    OTHER = "Other"
+class Species(models.TextChoices):
+    DOG = "dog"
+    CAT = "cat"
+    OTHER = "other"
 
 
 class Breed(models.Model):
     name = models.CharField(max_length=50)
-    animal = models.CharField(max_length=50, choices=Animal.choices)
+    species = models.CharField(max_length=50, choices=Species.choices)
 
 
 class Pet(models.Model):
@@ -56,14 +56,14 @@ class Pet(models.Model):
         GRAY = "gray"
 
     name = models.CharField(max_length=50, blank=True, default="")
-    type = models.CharField(max_length=50, choices=Animal.choices)
+    species = models.CharField(max_length=50, choices=Species.choices)
     breed = models.ManyToManyField("Breed")
     age = models.PositiveIntegerField(blank=True, null=True)
     sex = models.IntegerField(choices=Sex.choices, blank=True, default=Sex.UNKNOWN)
     eye_color = models.CharField(
         max_length=50, choices=Color.choices, blank=True, default=""
     )
-    color = models.CharField(
+    coat_color = models.CharField(
         max_length=50, choices=Color.choices, blank=True, default=""
     )
     weight = models.PositiveIntegerField(blank=True, null=True)
