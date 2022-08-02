@@ -47,9 +47,7 @@ class FakeUser(FakeData):
         # Use a random string for the username to ensure uniqueness between tests.
         id = "".join(random.choices(string.ascii_letters + string.digits, k=6))
         self.username = f"user_{id}"
-        self.first_name = "Bob"
-        self.last_name = "Dylan"
-        self.email = "bob@gmail.com"
+        self.nickname = "Bob"
         self.password = fake_password()
         super().__init__(**kwargs)
 

@@ -1,7 +1,6 @@
 from api.models import Pet, Photo, User, Post
 from api.serializers import (
     ChangePasswordSerializer,
-    LoginUserSerializer,
     PetSerializer,
     PhotoSerializer,
     UserSerializer,
@@ -27,7 +26,7 @@ class UserSerializerTest(TestCase):
         Test that UserSerializer.data returns the specified fields only.
         """
         serializer = UserSerializer(self.user)
-        fields = ["username", "first_name", "last_name", "email", "posts"]
+        fields = ["username", "nickname", "posts"]
         for field in fields:
             self.assertIn(field, serializer.data)
         self.assertEqual(len(serializer.data), len(fields))
@@ -47,32 +46,19 @@ class UserSerializerTest(TestCase):
         """
         Test that UserSerializer properly validates all fields.
         """
-        valid_data = {
+        username_and_nickname = {
             "username": "oscar123",
-            "first_name": "oscar",
-            "last_name": "rojas",
-            "email": "oscar@email.com",
+            "nickname": "oscar",
         }
-        data_missing_username = {
-            "first_name": "oscar",
-            "last_name": "rojas",
-            "email": "oscar@email.com",
+        nickname = {
+            "nickname": "oscar",
         }
-        data_missing_email = {
+        username = {
             "username": "oscar123",
-            "first_name": "oscar",
-            "last_name": "rojas",
         }
-        valid_data_missing_first_last_name = {
-            "username": "oscar123",
-            "email": "oscar@email.com",
-        }
-        self.assertTrue(UserSerializer(data=valid_data).is_valid())
-        self.assertFalse(UserSerializer(data=data_missing_username).is_valid())
-        self.assertTrue(
-            UserSerializer(data=valid_data_missing_first_last_name).is_valid()
-        )
-        self.assertFalse(UserSerializer(data=data_missing_email).is_valid())
+        self.assertTrue(UserSerializer(data=username_and_nickname).is_valid())
+        self.assertFalse(UserSerializer(data=nickname).is_valid())
+        self.assertTrue(UserSerializer(data=username).is_valid())
 
 
 class PetSerializerTest(TestCase):
@@ -82,12 +68,12 @@ class PetSerializerTest(TestCase):
         cls.fields = [
             "id",
             "name",
-            "type",
+            "species",
             "breed",
             "age",
             "sex",
             "eye_color",
-            "color",
+            "coat_color",
             "weight",
             "microchip",
         ]
@@ -127,7 +113,7 @@ class RegisterUserSerializerTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user_data = FakeUser().data
-        cls.fields = ["username", "password", "email", "first_name", "last_name"]
+        cls.fields = ["username", "password", "nickname"]
 
     def test_registers_user(self):
         """
@@ -146,7 +132,7 @@ class RegisterUserSerializerTest(TestCase):
         """
         serializer = RegisterUserSerializer(data=FakeUser().data)
         serializer.is_valid(raise_exception=True)
-        fields = ["username", "first_name", "last_name"]
+        fields = ["username", "nickname"]
         for field in fields:
             self.assertIn(field, serializer.data)
         self.assertEqual(len(serializer.data), len(fields))
@@ -174,17 +160,3 @@ class ChangePasswordSerializerTest(TestCase):
         self.assertTrue(serializer.is_valid())
         serializer.save()
         self.assertTrue(self.user.check_password(self.new_password))
-
-
-class LoginUserSerializerTest(TestCase):
-    def test_returns_correct_fields(self):
-        user_data = FakeUser().data
-        serializer = LoginUserSerializer(
-            data={
-                "username": user_data["username"],
-                "password": user_data["password"],
-            }
-        )
-        serializer.is_valid(raise_exception=True)
-        self.assertIn("username", serializer.data)
-        self.assertEqual(len(serializer.data), 1)
