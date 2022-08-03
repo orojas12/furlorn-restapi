@@ -32,7 +32,7 @@ class FakeData:
 class FakePet(FakeData):
     def __init__(self, **kwargs):
         self.name = "Yuna"
-        self.species = "Cat"
+        self.species = Species.CAT
         self.age = 2
         self.sex = Sex.FEMALE
         self.eye_color = Pet.Color.YELLOW
