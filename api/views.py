@@ -9,7 +9,7 @@ from rest_framework.serializers import ValidationError
 from rest_framework.authentication import BasicAuthentication
 from knox.views import LoginView as KnoxLoginView
 
-from api.models import Breed, User, Post
+from api.models import Breed, Post
 from api.serializers import (
     BreedSerializer,
     CreatePostSerializer,
