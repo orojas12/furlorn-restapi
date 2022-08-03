@@ -211,11 +211,6 @@ class BreedSerializer(ModelSerializer):
         fields = ["id", "name", "species"]
 
 
-class LoginUserSerializer(Serializer):
-    username = CharField(max_length=150)
-    password = CharField(max_length=128, write_only=True)
-
-
 def raise_if_unknown_fields(data: Mapping, serializer_cls: ModelSerializer):
     """Raises a ValidationError if data has fields that do not belong in the ModelSerializer class."""
     unknown_fields = set(data.keys()) - set(serializer_cls.Meta.fields)

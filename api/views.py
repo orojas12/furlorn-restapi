@@ -9,14 +9,13 @@ from rest_framework.serializers import ValidationError
 from rest_framework.authentication import BasicAuthentication
 from knox.views import LoginView as KnoxLoginView
 
-from api.models import Breed, User, Post
+from api.models import Breed, Post
 from api.serializers import (
     BreedSerializer,
     CreatePostSerializer,
     RegisterUserSerializer,
     UserSerializer,
     PostSerializer,
-    LoginUserSerializer,
 )
 from api.parsers import MultiPartJSONParser
 from api.permissions import IsOwnerOrReadOnly
@@ -161,7 +160,7 @@ class LoginView(KnoxLoginView):
 class BreedsListView(APIView):
     """A View class for getting a list of all existing breeds."""
 
-    parser_classes = [JSONParser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         breeds = Breed.objects.all()
