@@ -160,7 +160,7 @@ class LoginView(KnoxLoginView):
 class BreedsListView(APIView):
     """A View class for getting a list of all existing breeds."""
 
-    parser_classes = [JSONParser]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         breeds = Breed.objects.all()

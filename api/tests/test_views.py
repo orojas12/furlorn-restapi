@@ -9,7 +9,7 @@ from api.tests.fake_data import (
     fake_image_file,
 )
 from api.tests.exceptions import TestException
-from api.views import PostView, PostsView, ProfileView, RegisterUserView
+from api.views import BreedsListView, PostView, PostsView, ProfileView, RegisterUserView
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -247,5 +247,28 @@ class PostViewTest(TestCase):
         force_authenticate(request, self.user)
         response = PostView.as_view()(request, pk=-1)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIsInstance(response.data, dict)
+        self.assertNotEqual(len(response.data), 0)
+
+
+class BreedListViewTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(**FakeUser().data)
+        cls.url = reverse("breeds")
+        cls.factory = APIRequestFactory()
+
+    def test_get_200_response(self):
+        request = self.factory.get(self.url)
+        force_authenticate(request, self.user)
+        response = BreedsListView.as_view()(request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data, list)
+        self.assertNotEqual(len(response.data), 0)
+
+    def test_get_401_response(self):
+        request = self.factory.get(self.url)
+        response = BreedsListView.as_view()(request)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         self.assertIsInstance(response.data, dict)
         self.assertNotEqual(len(response.data), 0)
