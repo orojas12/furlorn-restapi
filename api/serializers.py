@@ -42,13 +42,15 @@ class PetSerializer(ModelSerializer):
             "breed",
             "age",
             "sex",
-            "eye_color",
-            "coat_color",
+            "eye_colors",
+            "coat_colors",
             "weight",
             "microchip",
         ]
         extra_kwargs = {
             "breed": {"required": False, "default": []},
+            "eye_colors": {"required": False, "default": []},
+            "coat_colors": {"required": False, "default": []},
             "id": {"read_only": True},
         }
 

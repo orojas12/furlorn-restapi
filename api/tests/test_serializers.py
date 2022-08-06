@@ -74,8 +74,8 @@ class PetSerializerTest(TestCase):
             "breed",
             "age",
             "sex",
-            "eye_color",
-            "coat_color",
+            "eye_colors",
+            "coat_colors",
             "weight",
             "microchip",
         ]
@@ -88,6 +88,10 @@ class PetSerializerTest(TestCase):
         for field in self.fields:
             self.assertIn(field, serializer.data)
         self.assertEqual(len(self.fields), len(serializer.data))
+
+    def test_deserializes_all_fields(self):
+        serializer = PetSerializer(data=FakePet().data)
+        self.assertTrue(serializer.is_valid())
 
 
 class PhotoSerializerTest(TestCase):
