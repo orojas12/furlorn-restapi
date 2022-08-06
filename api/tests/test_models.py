@@ -2,6 +2,7 @@ from uuid import UUID
 
 import boto3
 from api.models import (
+    Color,
     Species,
     Breed,
     Comment,
@@ -46,7 +47,10 @@ class PostModelTest(TestCase):
 class PetModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
+        cls.color = Color.objects.create(name="White", hex="FFFFFF")
         cls.pet = Pet.objects.create(**FakePet().data)
+        cls.pet.eye_colors.set([cls.color])
+        cls.pet.coat_colors.set([cls.color])
 
     def test_it_has_correct_fields(self):
         pet = self.pet
@@ -55,8 +59,8 @@ class PetModelTest(TestCase):
         self.assertIsInstance(pet.species, str),
         self.assertIsInstance(pet.age, int)
         self.assertIsInstance(pet.sex, int)
-        self.assertIsInstance(pet.eye_color, str)
-        self.assertIsInstance(pet.coat_color, str)
+        self.assertIsInstance(pet.eye_colors.first(), Color)
+        self.assertIsInstance(pet.coat_colors.first(), Color)
         self.assertIsInstance(pet.weight, int)
         self.assertIsInstance(pet.microchip, str)
 
@@ -160,3 +164,15 @@ class CommentModelTest(TestCase):
         for comment in Comment.objects.filter(reply_to=None):
             reply = Comment.objects.filter(reply_to=comment).first()
             self.assertEquals(comment, reply.reply_to)
+
+
+class ColorModelTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.color = Color.objects.create(name="White", hex="FFFFFF")
+
+    def test_it_has_correct_fields(self):
+        color = self.color
+        self.assertIsInstance(color.id, int)
+        self.assertIsInstance(color.name, str)
+        self.assertIsInstance(color.hex, str)

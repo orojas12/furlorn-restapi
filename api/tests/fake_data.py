@@ -1,13 +1,11 @@
-from abc import ABC, abstractmethod, abstractproperty
 from io import BytesIO
-import json
 import random
 import string
 from uuid import uuid4
 from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from api.models import Species, Sex, Pet
+from api.models import Species, Sex
 
 
 class FakeData:
@@ -35,8 +33,6 @@ class FakePet(FakeData):
         self.species = Species.CAT
         self.age = 2
         self.sex = Sex.FEMALE
-        self.eye_color = Pet.Color.YELLOW
-        self.coat_color = Pet.Color.BROWN
         self.weight = 8
         self.microchip = "900123456789000"
         super().__init__(**kwargs)

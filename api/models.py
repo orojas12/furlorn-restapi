@@ -41,31 +41,22 @@ class Breed(models.Model):
     species = models.CharField(max_length=50, choices=Species.choices)
 
 
-class Pet(models.Model):
-    class Color(models.TextChoices):
-        WHITE = "white"
-        BLACK = "black"
-        BROWN = "brown"
-        ORANGE = "orange"
-        RED = "red"
-        PINK = "pink"
-        PURPLE = "purple"
-        BLUE = "blue"
-        GREEN = "green"
-        YELLOW = "yellow"
-        GRAY = "gray"
+class Color(models.Model):
+    name = models.CharField(max_length=50)
 
+    # Only 6-digit hex is stored (#AABBCC) without leading '#' digit
+    # May store trailing alpha byte (00-FF) in the future
+    hex = models.CharField(max_length=8)
+
+
+class Pet(models.Model):
     name = models.CharField(max_length=50, blank=True, default="")
     species = models.CharField(max_length=50, choices=Species.choices)
     breed = models.ManyToManyField("Breed")
     age = models.PositiveIntegerField(blank=True, null=True)
     sex = models.IntegerField(choices=Sex.choices, blank=True, default=Sex.UNKNOWN)
-    eye_color = models.CharField(
-        max_length=50, choices=Color.choices, blank=True, default=""
-    )
-    coat_color = models.CharField(
-        max_length=50, choices=Color.choices, blank=True, default=""
-    )
+    eye_colors = models.ManyToManyField("Color", related_name="pet_eye_colors")
+    coat_colors = models.ManyToManyField("Color", related_name="pet_coat_colors")
     weight = models.PositiveIntegerField(blank=True, null=True)
     microchip = models.CharField(max_length=15, blank=True, default="")
 
