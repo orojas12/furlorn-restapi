@@ -8,7 +8,7 @@ from django.db import migrations
 def insert_pet_breeds(apps, schema_editor):
     Breed = apps.get_model("api", "Breed")
     breed_list = []
-    with open(os.path.join(os.path.dirname(__file__), "breeds.json"), "r") as f:
+    with open(os.path.join(os.path.dirname(__file__), "data/breeds.json"), "r") as f:
         data = json.load(f)
     for breed in data["dog_breeds"]:
         breed_list.append(Breed(name=breed, animal="dog"))
