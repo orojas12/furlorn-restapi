@@ -1,5 +1,4 @@
-asgiref==3.4.1
-backports.zoneinfo==0.2.1
+asgiref==3.5.2
 beautifulsoup4==4.10.0
 black==21.11b1
 boto3==1.20.17
@@ -11,7 +10,7 @@ cffi==1.15.1
 charset-normalizer==2.0.9
 click==8.0.3
 cryptography==37.0.4
-Django==4.0.6
+Django==4.1
 django-cors-headers==3.13.0
 django-rest-knox==4.2.0
 djangorestframework==3.12.4
@@ -36,5 +35,5 @@ six==1.16.0
 soupsieve==2.3.1
 sqlparse==0.4.2
 tomli==1.2.2
-typing-extensions==4.0.0
+typing_extensions==4.0.0
 urllib3==1.26.7
